@@ -14,7 +14,7 @@ from modules.multimodal_attention import MultimodalVQAWithAttention
 
 class VizWizDatasetCustom(Dataset):
     """
-    Custom VizWiz dataset for our multimodal model.
+    Custom VizWiz dataset for the multimodal model.
     Each sample should include:
       - "image": filename,
       - "question": question string,
