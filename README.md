@@ -72,6 +72,12 @@ Test the fine-tuned model:
 python scripts/inference_robust_vilt.py --image path/to/test_image.jpg --question "What is in the image?" --model_path vilt_finetuned_vizwiz
 ```
 
+Test the BLIP2 model:
+```bash
+python scripts/inference_blip2.py --image path/to/image.jpg --question "What is in this picture?" --model_path ./local_blip2
+```
+
+
 ## Interactive Web App
 ```bash
 streamlit run app.py

@@ -46,3 +46,7 @@ data/
 
 # Ignore ClearML cache & artifacts (optional)
 clearml_cache/
+
+
+# Blip2 model files
+local_blip2/

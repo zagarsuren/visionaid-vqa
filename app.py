@@ -18,7 +18,7 @@ def main():
     
     uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
     question = st.text_input("Enter your question:")
-    model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models")
+    model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz")
     
     if st.button("Get Answer"):
         if uploaded_file is None:

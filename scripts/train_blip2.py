@@ -6,33 +6,30 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 from transformers import (
-    ViltProcessor,
-    ViltForQuestionAnswering,
+    Blip2Processor,
+    Blip2ForConditionalGeneration,
     Trainer,
     TrainingArguments,
     default_data_collator,
 )
 
-class VizWizDataset(Dataset):
+class VizWizDatasetBlip2(Dataset):
     """
-    VizWiz-VQA dataset.
-    Each sample should have:
+    VizWiz-VQA dataset for BLIP2 fine-tuning.
+    Each sample is expected to have:
       - "image": image filename.
       - "question": the question string.
       - "answers": a list of answer objects (each with keys "answer_confidence" and "answer").
     
-    This implementation extracts answer strings from "answers", computes the most common answer (mode),
-    and then maps it to a label using answer2id. The scalar label is then converted to a one-hot vector.
-    Additionally, images are explicitly resized to (384, 384) to ensure a consistent shape.
+    This class extracts the answer strings from "answers", computes the most common answer (mode),
+    and then uses that answer as the target text.
     """
-    def __init__(self, image_dir, annotation_file, processor, answer2id, max_length=40):
+    def __init__(self, image_dir, annotation_file, processor, max_length=50):
         with open(annotation_file, "r") as f:
             self.samples = json.load(f)
         self.image_dir = image_dir
         self.processor = processor
-        self.answer2id = answer2id
         self.max_length = max_length
-        self.num_labels = len(answer2id)
 
     def __len__(self):
         return len(self.samples)
@@ -41,60 +38,66 @@ class VizWizDataset(Dataset):
         sample = self.samples[idx]
         image_path = os.path.join(self.image_dir, sample["image"])
         image = Image.open(image_path).convert("RGB")
-        # Resize the image to a fixed resolution (384x384)
+        # Resize the image to a fixed resolution (e.g., 384x384) for consistency.
         image = image.resize((384, 384))
         question = sample["question"]
 
         # Extract answer strings from the "answers" list
         answers_list = sample.get("answers", [])
-        answer_candidates = [ans["answer"].strip().lower() for ans in answers_list if ans.get("answer", "").strip()]
+        answer_candidates = [ans["answer"].strip() for ans in answers_list if ans.get("answer", "").strip()]
         if answer_candidates:
-            # Use the most common answer as the ground truth.
+            # Use the most common answer as the target.
             answer = Counter(answer_candidates).most_common(1)[0][0]
         else:
             answer = "unanswerable"
-            
-        # Map answer to label (if not found, use -100 so that it's ignored during loss computation)
-        label = self.answer2id.get(answer, -100)
         
-        # Convert scalar label to one-hot vector.
-        one_hot = torch.zeros(self.num_labels, dtype=torch.float)
-        if label != -100:
-            one_hot[label] = 1.0
+        # Define the target text for generation.
+        target_text = answer
 
-        # Process image and question with max_length=40
+        # Process image and question
         inputs = self.processor(
-            image, question,
+            image,
+            question,
             return_tensors="pt",
             padding="max_length",
             truncation=True,
             max_length=self.max_length,
         )
-        # Remove the batch dimension from all inputs
+        # Tokenize target text using the processor's target mode.
+        with self.processor.as_target_processor():
+            labels = self.processor.tokenizer(
+                target_text,
+                return_tensors="pt",
+                padding="max_length",
+                truncation=True,
+                max_length=self.max_length,
+            ).input_ids
+
+        # Remove the batch dimension from all fields.
         for key in inputs:
             inputs[key] = inputs[key].squeeze(0)
-        inputs["labels"] = one_hot  # one-hot target vector
+        labels = labels.squeeze(0)
+        inputs["labels"] = labels
+
         return inputs
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_dir", type=str, required=True, help="Directory containing VizWiz images")
     parser.add_argument("--annotations", type=str, required=True, help="Path to VizWiz annotation JSON file")
-    parser.add_argument("--model_name", type=str, default="dandelin/vilt-b32-finetuned-vqa", help="Pretrained ViLT model name")
-    parser.add_argument("--output_dir", type=str, default="models/vilt_finetuned_vizwiz", help="Output directory for the fine-tuned model")
+    parser.add_argument("--model_name", type=str, default="Salesforce/blip2-flan-t5-xl", help="Pretrained BLIP2 model name")
+    parser.add_argument("--output_dir", type=str, default="models/blip2_finetuned_vizwiz", help="Output directory for the fine-tuned model")
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--per_device_train_batch_size", type=int, default=8)
+    parser.add_argument("--per_device_train_batch_size", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     args = parser.parse_args()
     
-    processor = ViltProcessor.from_pretrained(args.model_name)
-    model = ViltForQuestionAnswering.from_pretrained(args.model_name)
+    # Load the BLIP2 processor and model.
+    processor = Blip2Processor.from_pretrained(args.model_name)
+    model = Blip2ForConditionalGeneration.from_pretrained(args.model_name)
     
-    # Build answer mapping using id2label (instead of id2answer)
-    id2label = model.config.id2label
-    answer2id = {v.lower(): int(k) for k, v in id2label.items()}
-    
-    dataset = VizWizDataset(args.image_dir, args.annotations, processor, answer2id, max_length=40)
+    # Create the dataset.
+    dataset = VizWizDatasetBlip2(args.image_dir, args.annotations, processor, max_length=50)
     
     training_args = TrainingArguments(
         output_dir=args.output_dir,
@@ -110,13 +113,13 @@ def main():
         model=model,
         args=training_args,
         train_dataset=dataset,
-        data_collator=default_data_collator,  # default collator pads the inputs appropriately
+        data_collator=default_data_collator,  # Handles dynamic padding.
     )
     
     trainer.train()
     model.save_pretrained(args.output_dir)
     processor.save_pretrained(args.output_dir)
-    print(f"Fine-tuned model saved to {args.output_dir}")
+    print(f"Fine-tuned BLIP2 model saved to {args.output_dir}")
 
 if __name__ == "__main__":
     main()
