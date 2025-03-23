@@ -11,25 +11,39 @@ def main():
     st.title("Inclusive VQA System for Visually Impaired Users")
     st.write("Choose a model and ask a question about an image.")
     
+    # Model selection
     model_option = st.sidebar.selectbox(
         "Select Model",
         ("ViLT (Fine-Tuned on VizWiz)", "BLIP2", "LLaMA 3.2 (via Ollama)")
     )
     
-    uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
+    # Option for image source: Upload or Camera Capture
+    image_source = st.sidebar.radio("Image Source", options=["Upload", "Camera Capture"])
+    
+    if image_source == "Upload":
+        uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
+    else:
+        uploaded_file = st.camera_input("Capture an image")
+    
     question = st.text_input("Enter your question:")
-    model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz")
+    model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", 
+                                       value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz")
     
     if st.button("Get Answer"):
         if uploaded_file is None:
-            st.warning("Please upload an image.")
+            st.warning("Please upload or capture an image.")
             return
         if not question:
             st.warning("Please enter a question.")
             return
         
-        image = Image.open(uploaded_file).convert("RGB")
-        # Optional: resize image if necessary
+        try:
+            image = Image.open(uploaded_file).convert("RGB")
+        except Exception as e:
+            st.error(f"Error processing the image: {e}")
+            return
+        
+        # Resize image if necessary
         if image.size != (384, 384):
             image = image.resize((384, 384))
         
@@ -47,7 +61,7 @@ def main():
             st.error("An error occurred during prediction. Returning fallback answer.")
             answer = "Unknown"
         
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+        st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
 
