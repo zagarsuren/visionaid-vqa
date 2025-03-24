@@ -83,7 +83,7 @@ def main():
     parser.add_argument("--model_name", type=str, default="dandelin/vilt-b32-finetuned-vqa", help="Pretrained ViLT model name")
     parser.add_argument("--output_dir", type=str, default="models/vilt_finetuned_vizwiz", help="Output directory for the fine-tuned model")
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--per_device_train_batch_size", type=int, default=8)
+    parser.add_argument("--per_device_train_batch_size", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     args = parser.parse_args()
     

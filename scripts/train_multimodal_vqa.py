@@ -101,7 +101,7 @@ def main():
     parser.add_argument("--annotations", type=str, required=True, help="Path to VizWiz annotation JSON file")
     parser.add_argument("--output_dir", type=str, default="models/multimodal_vqa_finetuned", help="Output directory for the model")
     parser.add_argument("--num_train_epochs", type=int, default=3)
-    parser.add_argument("--per_device_train_batch_size", type=int, default=8)
+    parser.add_argument("--per_device_train_batch_size", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     args = parser.parse_args()
     
@@ -142,7 +142,13 @@ def main():
     )
     
     trainer.train()
-    model.save_pretrained(args.output_dir)
+    # model.save_pretrained(args.output_dir)
+    # print(f"Finetuned multimodal VQA model saved to {args.output_dir}")
+
+    # Use torch.save to save the state dictionary
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+    torch.save(model.state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
     print(f"Finetuned multimodal VQA model saved to {args.output_dir}")
 
 if __name__ == "__main__":
