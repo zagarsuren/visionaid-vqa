@@ -14,7 +14,8 @@ def main():
     
     processor = ViltProcessor.from_pretrained(args.model_path)
     model = ViltForQuestionAnswering.from_pretrained(args.model_path)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
     model.to(device)
     
     image = Image.open(args.image).convert("RGB")

@@ -82,13 +82,17 @@ def main():
     parser.add_argument("--annotations", type=str, required=True, help="Path to VizWiz annotation JSON file")
     parser.add_argument("--model_name", type=str, default="dandelin/vilt-b32-finetuned-vqa", help="Pretrained ViLT model name")
     parser.add_argument("--output_dir", type=str, default="models/vilt_finetuned_vizwiz", help="Output directory for the fine-tuned model")
-    parser.add_argument("--num_train_epochs", type=int, default=3)
+    parser.add_argument("--num_train_epochs", type=int, default=5)
     parser.add_argument("--per_device_train_batch_size", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     args = parser.parse_args()
+
+    # Use MPS (Apple Silicon) if available.
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
     
     processor = ViltProcessor.from_pretrained(args.model_name)
-    model = ViltForQuestionAnswering.from_pretrained(args.model_name)
+    model = ViltForQuestionAnswering.from_pretrained(args.model_name).to(device)
     
     # Build answer mapping using id2label (instead of id2answer)
     id2label = model.config.id2label
