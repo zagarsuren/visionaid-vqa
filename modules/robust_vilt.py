@@ -1,5 +1,3 @@
-# modules/robust_vilt.py
-
 import torch
 from transformers import ViltProcessor, ViltForQuestionAnswering
 from PIL import Image

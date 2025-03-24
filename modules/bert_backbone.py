@@ -12,9 +12,18 @@ class BertBackbone(nn.Module):
     def forward(self, questions):
         """
         questions: list of strings of length B.
-        Returns tensor of shape [B, seq_length, hidden_dim]
+        Returns tensor of shape [B, 1, hidden_dim] using only the [CLS] token.
         """
-        encoded = self.tokenizer(questions, return_tensors="pt", padding=True, truncation=True, max_length=40)
-        # Move to the same device as the model if needed (handled externally in training)
+        encoded = self.tokenizer(
+            questions, 
+            return_tensors="pt", 
+            padding=True, 
+            truncation=True, 
+            max_length=40
+        )
+        # Move tensors to the same device as the model.
+        encoded = {k: v.to(self.bert.device) for k, v in encoded.items()}
         outputs = self.bert(**encoded)
-        return outputs.last_hidden_state  # [B, seq_length, hidden_dim]
+        # Extract the [CLS] token embedding (first token) and add a token dimension.
+        cls_embedding = outputs.last_hidden_state[:, 0, :]  # [B, hidden_dim]
+        return cls_embedding.unsqueeze(1)  # [B, 1, hidden_dim]

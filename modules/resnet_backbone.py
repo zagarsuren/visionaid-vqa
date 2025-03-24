@@ -1,11 +1,13 @@
+# ./modules/resnet_backbone.py
+
 import torch.nn as nn
-import torchvision.models as models
+from torchvision.models import resnet50, ResNet50_Weights
 
 class ResNetBackbone(nn.Module):
     def __init__(self, pretrained=True):
         super().__init__()
         # Use ResNet50 pretrained on ImageNet.
-        model = models.resnet50(pretrained=pretrained)
+        model = resnet50(weights=ResNet50_Weights.DEFAULT if pretrained else None)
         # Remove the final fully-connected layer.
         self.features = nn.Sequential(*list(model.children())[:-1])
         self.output_dim = 2048

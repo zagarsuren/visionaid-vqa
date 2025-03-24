@@ -69,12 +69,12 @@ python scripts/train_robust_vilt.py --image_dir path/to/images --annotations pat
 ## Inference
 Test the fine-tuned model:
 ```bash
-python scripts/inference_robust_vilt.py --image path/to/test_image.jpg --question "What is in the image?" --model_path vilt_finetuned_vizwiz
+python scripts/inference_robust_vilt.py --image path/to/test_image.jpg --question "What is in the image?" --model_path ./models/vilt_finetuned_vizwiz
 ```
 
 Test the BLIP2 model:
 ```bash
-python scripts/inference_blip2.py --image path/to/image.jpg --question "What is in this picture?" --model_path ./local_blip2
+python scripts/inference_blip2.py --image path/to/image.jpg --question "What is in this picture?" --model_path ./models/local_blip2
 ```
 
 
