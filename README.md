@@ -63,7 +63,16 @@ Prepare the VizWiz-VQA dataset with an annotation JSON file where each entry has
 Then run:
 
 ```bash
-python scripts/train_robust_vilt.py --image_dir path/to/images --annotations path/to/annotations.json
+python scripts/train_vilt.py\
+  --train_image_dir /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/train \
+  --val_image_dir /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/val \
+  --train_annotations /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/annotations/train.json \
+  --val_annotations /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/annotations/val.json \
+  --model_name dandelin/vilt-b32-finetuned-vqa \
+  --output_dir models/vilt_finetuned_vizwiz \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 4 \
+  --learning_rate 5e-5
 ```
 
 ## Inference
