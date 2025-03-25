@@ -92,9 +92,15 @@ def main():
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     args = parser.parse_args()
     
+
+    # Use MPS (Apple Silicon) if available.
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
+
+
     # Load the BLIP2 processor and model.
     processor = Blip2Processor.from_pretrained(args.model_name)
-    model = Blip2ForConditionalGeneration.from_pretrained(args.model_name)
+    model = Blip2ForConditionalGeneration.from_pretrained(args.model_name).to(device)
     
     # Create the dataset.
     dataset = VizWizDatasetBlip2(args.image_dir, args.annotations, processor, max_length=50)

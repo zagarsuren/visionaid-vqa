@@ -6,6 +6,8 @@ class BLIP2Model:
         self.processor = Blip2Processor.from_pretrained(model_path, local_files_only=True)
         self.model = Blip2ForConditionalGeneration.from_pretrained(model_path, local_files_only=True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # tried to use MPS but it returned MPS backend out of memory error
+        # self.device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
         self.model.to(self.device)
 
     def generate_answer(self, image, question):

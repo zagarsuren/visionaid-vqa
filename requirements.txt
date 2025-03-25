@@ -8,3 +8,5 @@ transformers>=4.29.0
 Pillow==9.3.0
 requests==2.28.2
 # soundfile==0.12.1
+nltk>=3.6.7
+matplotlib==3.9.4

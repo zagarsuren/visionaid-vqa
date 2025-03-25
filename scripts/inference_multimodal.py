@@ -19,7 +19,7 @@ def main():
     parser.add_argument("--question", type=str, required=True, help="Question about the image")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the fine-tuned multimodal model directory")
     args = parser.parse_args()
-    
+
     # Define the answer mapping as used during training.
     dummy_answer_list = ["yes", "no", "basil", "soda", "coke", "unanswerable"]
     id2answer = {idx: ans for idx, ans in enumerate(dummy_answer_list)}

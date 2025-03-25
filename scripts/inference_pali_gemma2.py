@@ -10,7 +10,10 @@ def main():
     parser.add_argument("--model_path", type=str, required=True, help="Local path to the PaliGemma model directory")
     args = parser.parse_args()
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Use MPS (Apple Silicon) if available.
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    print(f"Using device: {device}")
 
     # Load processor and model from the local path
     processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True)
