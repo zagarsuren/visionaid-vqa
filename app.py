@@ -1,7 +1,7 @@
 import streamlit as st
 from PIL import Image
 import torch
-from modules.vilt import RobustViLT
+from modules.robust_vilt import RobustViLT
 from modules.blip2 import BLIP2Model
 from modules.paligemma2 import PaliGemmaModel
 
