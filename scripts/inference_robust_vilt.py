@@ -1,4 +1,6 @@
 # scripts/inference_robust_vilt.py
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 import argparse
 from PIL import Image
