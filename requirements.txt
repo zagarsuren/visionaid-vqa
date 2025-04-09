@@ -11,3 +11,5 @@ requests==2.28.2
 nltk>=3.6.7
 matplotlib==3.9.4
 pytesseract==0.3.10
+scikit-learn==1.6.1
+tensorboard==2.19.0
