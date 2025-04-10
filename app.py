@@ -28,7 +28,7 @@ def main():
     
     question = st.text_input("Enter your question:")
     model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", 
-                                       value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz2")
+                                       value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz3")
     
     # Display uploaded image immediately
     if uploaded_file is not None:
