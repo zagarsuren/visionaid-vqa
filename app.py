@@ -15,7 +15,7 @@ def main():
     # Model selection
     model_option = st.sidebar.selectbox(
         "Select Model",
-        ("ViLT (Fine-Tuned on VizWiz)", "BLIP2", "FLORENCE2")
+        ("ViLT-finetuned", "Florence2-finetuned", "BLIP2", )
     )
     
     # Option for image source: Upload or Camera Capture
@@ -26,11 +26,7 @@ def main():
     else:
         uploaded_file = st.camera_input("Capture an image")
 
-
     question = st.text_input("Enter your question:")
-    # Retain the ViLT model path input for ViLT; Florence2 uses a fixed path.
-    model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", 
-                                       value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz3")
 
     # Display uploaded image immediately
     if uploaded_file is not None:
@@ -62,37 +58,26 @@ def main():
             image = image.resize((384, 384))
         
         try:
-            if model_option == "ViLT (Fine-Tuned on VizWiz)":
-                model = RobustViLT(model_name=model_path)
+            if model_option == "ViLT-finetuned":
+                model = RobustViLT(model_name="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz_ocr")
                 answer = model.generate_answer(image, question)
-                inference_time = None
-                gpu_memory = None
+            elif model_option == "Florence2-finetuned":
+                model = Florence2Model(model_path="models/florence2-finetuned")
+                # For Florence2, use a fixed task prompt and treat the user question as additional input.
+                task_prompt = "Describe the answer in detail."
+                answer = model.generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()
                 answer = model.generate_answer(image, question)
-                inference_time = None
-                gpu_memory = None
-            elif model_option == "FLORENCE2":
-                model = Florence2Model(model_path="models/florence2-finetuned")
-                # For Florence2, use a fixed task prompt and treat the user question as additional input.
-                task_prompt = ""
-                answer = model.generate_answer(image, task_prompt, question)
-                inference_time = None
-                gpu_memory = None
+
         except Exception as e:
             st.error(f"An error occurred during prediction: {e}")
             answer = "Unknown"
-            inference_time = None
-            gpu_memory = None
         
         st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
-        
-        if inference_time is not None:
-            st.write(f"⏱️ Inference Time: {inference_time:.2f} seconds")
-        if gpu_memory is not None:
-            st.write(f"🖥️ GPU Memory Used: {gpu_memory:.2f} MB")
+
 
 if __name__ == "__main__":
     main()

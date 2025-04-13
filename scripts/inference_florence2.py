@@ -6,7 +6,7 @@ import argparse
 # Choose the device: prefer CUDA, then MPS (Apple Silicon), else CPU.
 device = torch.device(
     "cuda" if torch.cuda.is_available() 
-    else "mps" if hasattr(torch.backends, "mps") and torch.backends.mps.is_available() 
+    # else "mps" if hasattr(torch.backends, "mps") and torch.backends.mps.is_available() 
     else "cpu"
 )
 
@@ -21,7 +21,7 @@ def load_model_and_processor(model_path="models/florence2-finetuned"):
     
     # Check the expected vision model type.
     if getattr(config.vision_config, "model_type", None) != "davit":
-        print(f"Warning: Overriding vision_config.model_type from {config.vision_config.model_type} to 'davit'")
+        # print(f"Warning: Overriding vision_config.model_type from {config.vision_config.model_type} to 'davit'")
         config.vision_config.model_type = "davit"
     
     # Load processor and model using the (possibly modified) config.

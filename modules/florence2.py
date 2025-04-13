@@ -10,7 +10,7 @@ class Florence2Model:
     The model and processor are loaded from a local checkpoint (default: "models/florence2-finetuned").
     If the configuration's vision_config.model_type is not "davit", it is overridden to bypass the assertion error.
     """
-    def __init__(self, model_path="models/florence2-finetuned"):
+    def __init__(self, model_path="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/florence2-finetuned"):
         # Load the configuration.
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         # Override vision_config.model_type if necessary.
@@ -65,8 +65,8 @@ class Florence2Model:
         generated_ids = self.model.generate(
             input_ids=inputs["input_ids"],
             pixel_values=inputs["pixel_values"],
-            max_new_tokens=40,
-            num_beams=1
+            max_new_tokens=64,
+            num_beams=2
         )
         
         # Decode the generated tokens.

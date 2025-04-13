@@ -161,7 +161,7 @@ def main():
         per_device_train_batch_size=args.per_device_train_batch_size,
         learning_rate=args.learning_rate,
         logging_steps=50,      # Log training metrics every 50 steps
-        eval_steps=100,        # Evaluate every 100 steps
+        eval_steps=500,        # Evaluate every 100 steps
         eval_strategy="steps",
         save_steps=500,
         warmup_steps=100,      # Warmup steps for the learning rate scheduler
