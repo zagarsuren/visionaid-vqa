@@ -12,16 +12,16 @@ image_dirs = {"train": "train", "val": "val", "test": "test"}
 output_dir = "/Users/zagaraa/Documents/GitHub/visionaid-vqa/data"
 
 # Desired output directory
-output_base = os.path.join(output_dir, "balanced_subset")
+output_base = os.path.join(output_dir, "balanced_subset2")
 os.makedirs(output_base, exist_ok=True)
 
 # Final split sizes
-splits = {"train": 2000, "val": 286, "test": 571}
+splits = {"train": 2450, "val": 525, "test": 525}
 answer_type_distribution = {
-    "yes/no": 0.048,
-    "number": 0.0169,
-    "other": 0.5891,
-    "unanswerable": 0.346
+    "yes/no": 0.25, #0.048,
+    "number": 0.1, #0.0169,
+    "other": 0.6, #0.5891,
+    "unanswerable": 0.05 #0.346
 }
 
 # Load all annotations

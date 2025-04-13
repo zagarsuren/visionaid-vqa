@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 # Path for macOS with Homebrew
 pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
 
+
 class VizWizDataset(Dataset):
     def __init__(self, image_dir, annotation_file, processor, answer2id, max_length=40):
         with open(annotation_file, "r") as f:
@@ -38,19 +39,24 @@ class VizWizDataset(Dataset):
     def __getitem__(self, idx):
         sample = self.samples[idx]
         image_path = os.path.join(self.image_dir, sample["image"])
-        image = Image.open(image_path).convert("RGB").resize((384, 384))
-
-        # ✅ OCR extraction using PyTesseract
-        ocr_text = pytesseract.image_to_string(image)
-        ocr_text = " ".join(ocr_text.split())  # remove newlines and compress whitespaces
+        # Open the image in its original resolution for OCR extraction
+        image_orig = Image.open(image_path).convert("RGB")
+        
+        # Use a custom OCR configuration.
+        # PSM 6 is often effective when assuming a uniform block of text.
+        ocr_config = "--psm 6"
+        ocr_text = pytesseract.image_to_string(image_orig, config=ocr_config)
+        ocr_text = " ".join(ocr_text.split())  # Remove newlines and extra spaces
 
         original_question = sample["question"]
         question = f"{original_question.strip()} Context: {ocr_text}"
 
+        # Resize the image for the processor (model)
+        image = image_orig.resize((384, 384))
+
         answers_list = sample.get("answers", [])
         answer_candidates = [ans["answer"].strip().lower() for ans in answers_list if ans.get("answer", "").strip()]
         answer = Counter(answer_candidates).most_common(1)[0][0] if answer_candidates else "unanswerable"
-
         label = self.answer2id.get(answer, -100)
         one_hot = torch.zeros(self.num_labels, dtype=torch.float)
         if label != -100:
@@ -103,7 +109,7 @@ def main():
     parser.add_argument("--test_annotations", type=str, required=False, help="Path to test annotation JSON file")
     
     parser.add_argument("--model_name", type=str, default="dandelin/vilt-b32-finetuned-vqa", help="Pretrained ViLT model name")
-    parser.add_argument("--output_dir", type=str, default="models/vilt_finetuned_vizwiz", help="Output directory for the fine-tuned model")
+    parser.add_argument("--output_dir", type=str, default="models/vilt_finetuned_vizwiz_ocr", help="Output directory for the fine-tuned model")
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--per_device_train_batch_size", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=5e-5)
@@ -147,7 +153,6 @@ def main():
         valid_true = np.array(valid_true)
         accuracy = (valid_preds == valid_true).astype(np.float32).mean().item()
         return {"accuracy": accuracy}
-
     
     # Set training arguments with a linear learning rate scheduler.
     training_args = TrainingArguments(
@@ -161,6 +166,11 @@ def main():
         save_steps=500,
         warmup_steps=100,      # Warmup steps for the learning rate scheduler
         lr_scheduler_type="linear",  # Use a linear learning rate scheduler
+        logging_dir=os.path.join(args.output_dir, "logs"),
+        report_to=["tensorboard"],
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
     )
     
     trainer = Trainer(

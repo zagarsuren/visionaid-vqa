@@ -125,8 +125,8 @@ def main():
                 bleu_scores.append(bleu)
 
                 # Optional: Debug unanswerable cases
-                if label_str == "unanswerable":
-                    print(f"✅ Unanswerable example: pred={pred_str}, label={label_str}")
+                # if label_str == "unanswerable":
+                #    print(f"✅ Unanswerable example: pred={pred_str}, label={label_str}")
 
     # Overall accuracy
     overall_acc = np.mean([p == l for p, l in zip(predictions, references)])

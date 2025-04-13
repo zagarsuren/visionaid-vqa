@@ -6,7 +6,7 @@ from PIL import Image
 import torch
 from modules.robust_vilt import RobustViLT
 from modules.blip2 import BLIP2Model
-from modules.paligemma2 import PaliGemmaModel
+from modules.florence2 import Florence2Model  # Florence2Model with three-argument generate_answer
 
 def main():
     st.title("Inclusive VQA System for Visually Impaired Users")
@@ -15,7 +15,7 @@ def main():
     # Model selection
     model_option = st.sidebar.selectbox(
         "Select Model",
-        ("ViLT (Fine-Tuned on VizWiz)", "BLIP2", "PaliGemma")
+        ("ViLT (Fine-Tuned on VizWiz)", "BLIP2", "FLORENCE2")
     )
     
     # Option for image source: Upload or Camera Capture
@@ -25,11 +25,13 @@ def main():
         uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
     else:
         uploaded_file = st.camera_input("Capture an image")
-    
+
+
     question = st.text_input("Enter your question:")
+    # Retain the ViLT model path input for ViLT; Florence2 uses a fixed path.
     model_path = st.sidebar.text_input("ViLT Model Path (if using ViLT)", 
                                        value="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz3")
-    
+
     # Display uploaded image immediately
     if uploaded_file is not None:
         try:
@@ -42,13 +44,13 @@ def main():
         image = None
 
     if st.button("Get Answer"):
-        if image is None:
+        if uploaded_file is None:
             st.warning("Please upload or capture an image.")
             return
         if not question:
             st.warning("Please enter a question.")
             return
-        
+
         try:
             image = Image.open(uploaded_file).convert("RGB")
         except Exception as e:
@@ -70,9 +72,13 @@ def main():
                 answer = model.generate_answer(image, question)
                 inference_time = None
                 gpu_memory = None
-            else:  # PaliGemma
-                model = PaliGemmaModel()
-                answer, inference_time, gpu_memory = model.generate_answer(image, question)
+            elif model_option == "FLORENCE2":
+                model = Florence2Model(model_path="models/florence2-finetuned")
+                # For Florence2, use a fixed task prompt and treat the user question as additional input.
+                task_prompt = ""
+                answer = model.generate_answer(image, task_prompt, question)
+                inference_time = None
+                gpu_memory = None
         except Exception as e:
             st.error(f"An error occurred during prediction: {e}")
             answer = "Unknown"
@@ -83,7 +89,6 @@ def main():
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
         
-        # Show timing and GPU memory if available
         if inference_time is not None:
             st.write(f"⏱️ Inference Time: {inference_time:.2f} seconds")
         if gpu_memory is not None:
