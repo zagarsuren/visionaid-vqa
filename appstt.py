@@ -149,6 +149,10 @@ def main():
         # Ensure the answer is a string.
         if not isinstance(answer, str):
             answer = str(answer)
+
+        # If the answer is a dict, extract the value to remove any dictionary formatting (i.e. remove "{'" characters).
+        if isinstance(answer, dict):
+            answer = answer.get("", "")
         
         
         st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
