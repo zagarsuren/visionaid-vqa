@@ -11,7 +11,8 @@ This Streamlit web application allows users to upload or capture an image, ask a
   - `Florence2-finetuned` (uses a task prompt)
   - `BLIP2` (multi-modal reasoning model)
 - 📷 Accepts image input from upload or camera
-- ❓ Accepts natural language questions
+- ❓ Accepts natural language questions 
+- 🔊 Accepts audio input and converts audio to text
 - 🔊 Converts answers to speech using `gTTS`
 - 🎧 Auto-plays audio response in the app
 
@@ -21,7 +22,6 @@ This Streamlit web application allows users to upload or capture an image, ask a
 
 ```graphql
 project_root/
-│
 ├── data  
 ├── app.py  
 ├── modules/
@@ -32,6 +32,7 @@ project_root/
 ├── scripts
 ├── assets/
 │   └── audio/
+│       └── recording.mp3  ← recorded question audio
 │       └── speech.mp3  ← generated answer audio
 
 ```
