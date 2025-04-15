@@ -88,7 +88,7 @@ def main():
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="models/florence2-finetuned")
                 # Use a fixed task prompt for Florence2.
-                task_prompt = "Describe the photo in detail."
+                task_prompt = "Describe the answer in detail."
                 answer = model.generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()
@@ -112,7 +112,7 @@ def main():
         # ---------- Text-to-Speech: Clean Answer and Convert to Audio, Save it, and Autoplay ----------
         try:
             # If the answer contains the task prompt, remove it.
-            prompt_to_remove = task_prompt
+            prompt_to_remove = "Describe the answer in detail."
             if prompt_to_remove in answer:
                 answer = answer.replace(prompt_to_remove, "").strip()
             
