@@ -112,7 +112,7 @@ def main():
         # ---------- Text-to-Speech: Clean Answer and Convert to Audio, Save it, and Autoplay ----------
         try:
             # If the answer contains the task prompt, remove it.
-            prompt_to_remove = "Describe the answer in detail."
+            prompt_to_remove = "{'Describe the answer in detail.'"
             if prompt_to_remove in answer:
                 answer = answer.replace(prompt_to_remove, "").strip()
             
