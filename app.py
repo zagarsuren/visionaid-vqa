@@ -88,7 +88,7 @@ def main():
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="models/florence2-finetuned")
                 # Use a fixed task prompt for Florence2.
-                task_prompt = "Answer in detail."
+                task_prompt = "Describe the photo in detail."
                 answer = model.generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()

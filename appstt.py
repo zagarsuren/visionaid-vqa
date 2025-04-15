@@ -13,7 +13,7 @@ import base64
 import speech_recognition as sr
 import io
 
-# Import the streamlit_audiorecorder component and pydub
+# Import the audiorecorder component and pydub
 from audiorecorder import audiorecorder
 from pydub import AudioSegment
 
@@ -69,9 +69,9 @@ def main():
         st.info("Step 1: Record your question using your microphone.")
         audio_recording = audiorecorder("Record audio")  # returns a pydub.AudioSegment
         if audio_recording is not None:
-            # Button to save the recorded audio to assets/recording.mp3.
+            # Button to save the recorded audio to assets/audio/recording.mp3.
             if st.button("Save Recording"):
-                audio_dir = os.path.join("assets/audio")
+                audio_dir = os.path.join("assets", "audio")
                 os.makedirs(audio_dir, exist_ok=True)
                 audio_file_path = os.path.join(audio_dir, "recording.mp3")
                 audio_recording.export(audio_file_path, format="mp3")
@@ -79,7 +79,7 @@ def main():
             
             st.info("Step 2: Transcribe the saved recording.")
             if st.button("Transcribe Recording"):
-                audio_file_path = os.path.join("assets/audio", "recording.mp3")
+                audio_file_path = os.path.join("assets", "audio", "recording.mp3")
                 try:
                     # Load the saved MP3 file using pydub and convert it to WAV.
                     audio = AudioSegment.from_file(audio_file_path, format="mp3")
@@ -135,9 +135,10 @@ def main():
                 model = RobustViLT(model_name="models/vilt_finetuned_vizwiz_ocr")
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
-                model = Florence2Model(model_path="models/florence2-finetuned")
-                task_prompt = "Answer in detail."
-                answer = model.generate_answer(image, task_prompt, question)
+                # Note: The task_prompt is provided to the model during generation,
+                # but we don't want it to be read in the Text-to-Speech output.
+                task_prompt = "Describe the answer in detail."
+                answer = Florence2Model(model_path="models/florence2-finetuned").generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()
                 answer = model.generate_answer(image, question)
@@ -149,12 +150,18 @@ def main():
         if not isinstance(answer, str):
             answer = str(answer)
         
+        
         st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
         
-        # ---------- Text-to-Speech: Convert the answer to audio, save it, and autoplay ----------
+        # ---------- Text-to-Speech: Clean Answer and Convert to Audio, Save it, and Autoplay ----------
         try:
+            # If the answer contains the task prompt, remove it.
+            prompt_to_remove = task_prompt
+            if prompt_to_remove in answer:
+                answer = answer.replace(prompt_to_remove, "").strip()
+            
             audio_dir = os.path.join("assets", "audio")
             os.makedirs(audio_dir, exist_ok=True)
             audio_file_path = os.path.join(audio_dir, "speech.mp3")
