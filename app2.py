@@ -59,7 +59,7 @@ def run_vqa_demo():
         
         try:
             if model_option == "ViLT-finetuned":
-                model = RobustViLT(model_name="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz_ocr")
+                model = RobustViLT(model_name="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/vilt_finetuned_vizwiz")
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/florence2-finetuned")

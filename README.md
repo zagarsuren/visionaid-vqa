@@ -29,7 +29,7 @@ project_root/
 │   ├── florence2.py
 │   └── blip2.py
 ├── models
-│   ├── vilt_finetuned_vizwiz_ocr
+│   ├── vilt_finetuned_vizwiz
 │   ├── florence2-finetuned
 │   ├── local_blip2
 ├── scripts
@@ -74,7 +74,7 @@ pip install -r requirements.txt
 
 ## 🧠 Model Weights
 
-- `RobustViLT` → `/models/vilt_finetuned_vizwiz_ocr`
+- `RobustViLT` → `/models/vilt_finetuned_vizwiz`
 - `Florence2Model` → `/models/florence2-finetuned`
 - `BLIP2Model` → `local_blip2` Uses HuggingFace or local model by default.
 

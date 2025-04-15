@@ -132,7 +132,7 @@ def main():
         
         try:
             if model_option == "ViLT-finetuned":
-                model = RobustViLT(model_name="models/vilt_finetuned_vizwiz_ocr")
+                model = RobustViLT(model_name="models/vilt_finetuned_vizwiz")
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
                 # Note: The task_prompt is provided to the model during generation,
