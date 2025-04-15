@@ -136,7 +136,7 @@ def main():
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="models/florence2-finetuned")
-                task_prompt = "Describe the answer in detail."
+                task_prompt = "Answer in detail."
                 answer = model.generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()
