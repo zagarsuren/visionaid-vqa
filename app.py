@@ -8,14 +8,38 @@ from modules.robust_vilt import RobustViLT
 from modules.blip2 import BLIP2Model
 from modules.florence2 import Florence2Model  # Florence2Model with three-argument generate_answer
 
+from gtts import gTTS
+import base64
+
+def autoplay_audio(file_path: str):
+    """
+    Reads an audio file, encodes it in base64 and returns an HTML string that embeds the audio.
+    The audio is set to auto-play.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read()
+        # Encode audio data with base64
+        b64 = base64.b64encode(data).decode()
+        # Construct an HTML audio element with base64 source
+        html_audio = f"""
+            <audio controls autoplay="true">
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
+        """
+        st.markdown(html_audio, unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Could not load the audio: {e}")
+
 def main():
     st.title("Inclusive VQA System for Visually Impaired Users")
     st.write("Choose a model and ask a question about an image.")
     
-    # Model selection
+    # Model selection in the sidebar
     model_option = st.sidebar.selectbox(
         "Select Model",
-        ("ViLT-finetuned", "Florence2-finetuned", "BLIP2", )
+        ("Florence2-finetuned", "ViLT-finetuned", "BLIP2")
     )
     
     # Option for image source: Upload or Camera Capture
@@ -25,10 +49,10 @@ def main():
         uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
     else:
         uploaded_file = st.camera_input("Capture an image")
-
+    
     question = st.text_input("Enter your question:")
-
-    # Display uploaded image immediately
+    
+    # Display the uploaded or captured image
     if uploaded_file is not None:
         try:
             image = Image.open(uploaded_file).convert("RGB")
@@ -63,21 +87,42 @@ def main():
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="models/florence2-finetuned")
-                # For Florence2, use a fixed task prompt and treat the user question as additional input.
+                # Use a fixed task prompt for Florence2.
                 task_prompt = "Describe the answer in detail."
                 answer = model.generate_answer(image, task_prompt, question)
             elif model_option == "BLIP2":
                 model = BLIP2Model()
                 answer = model.generate_answer(image, question)
-
         except Exception as e:
             st.error(f"An error occurred during prediction: {e}")
             answer = "Unknown"
         
+        # Ensure the answer is a string
+        if not isinstance(answer, str):
+            answer = str(answer)
+        
         st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
-
+        
+        # ---------- Text-to-Speech: Save Audio and Autoplay via Custom HTML ----------
+        try:
+            # Ensure the assets/audio directory exists
+            audio_dir = os.path.join("assets", "audio")
+            os.makedirs(audio_dir, exist_ok=True)
+            
+            # Define the file path where the audio will be saved
+            audio_file_path = os.path.join(audio_dir, "speech.mp3")
+            
+            # Generate audio using gTTS and save it to the file
+            tts = gTTS(answer, lang='en')
+            tts.save(audio_file_path)
+            
+            st.success("Audio generated and saved successfully!")
+            # Autoplay the saved audio file using the custom HTML function
+            autoplay_audio(audio_file_path)
+        except Exception as e:
+            st.error(f"Text-to-speech conversion failed: {e}")
 
 if __name__ == "__main__":
     main()

@@ -40,6 +40,7 @@ data/
 *.csv
 *.json
 *.parquet
+*.mp3
 
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/
