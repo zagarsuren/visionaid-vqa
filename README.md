@@ -73,9 +73,9 @@ pip install -r requirements.txt
 
 Ensure that the following models are downloaded and placed appropriately:
 
-`RobustViLT` → `/models/vilt_finetuned_vizwiz_ocr`
-`Florence2Model` → `/models/florence2-finetuned`
-`BLIP2Model` → Uses HuggingFace or local model by default
+- `RobustViLT` → `/models/vilt_finetuned_vizwiz_ocr`
+- `Florence2Model` → `/models/florence2-finetuned`
+- `BLIP2Model` → Uses HuggingFace or local model by default
 
 
 ## To run the Web App
