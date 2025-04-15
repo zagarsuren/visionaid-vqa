@@ -1,33 +1,51 @@
 # VisionAid-VQA: Inclusive Visual Question Answering Using Deep Learning and Multimodal Attention Mechanisms
 
-This repository implements an inclusive and context-aware Visual Question Answering (VQA) system that leverages advanced multimodal attention mechanisms. We fine-tune a ViLT model on the VizWiz dataset and compare its performance with BLIP2 and LLaMA 3.2 (accessed via Ollama). An interactive Streamlit app enables real-time queries.
+This Streamlit web application allows users to upload or capture an image, ask a question about it, and receive an **audio response** using advanced **Visual Question Answering (VQA)** models. The system is designed for accessibility, especially supporting visually impaired users.
 
-## Project Structure
+---
+
+## 🧠 Features
+
+- 🔍 Supports multiple VQA models:
+  - `RobustViLT` (ViLT-finetuned with OCR)
+  - `Florence2-finetuned` (uses a task prompt)
+  - `BLIP2` (multi-modal reasoning model)
+- 📷 Accepts image input from upload or camera
+- ❓ Accepts natural language questions
+- 🔊 Converts answers to speech using `gTTS`
+- 🎧 Auto-plays audio response in the app
+
+---
+
+## 📁 Project Structure
 
 ```graphql
-visionaid-vqa/
+project_root/
+│
+├── data  
+├── app.py  
 ├── modules/
-│   ├── robust_vilt.py           # ViLT module (fine‑tunable on VizWiz)
-│   ├── multimodal_attention.py  # Custom cross‑modal attention enhancement module
-│   ├── resnet_backbone.py       # CNN feature extraction module
-│   ├── bert_backbone.py         # Text feature extraction module   
-│   ├── blip2.py                 # BLIP2 wrapper for inference (pretrained weights)
-│   └── llama32.py               # LLaMA 3.2 wrapper via Ollama (placeholder)
-├── scripts/
-│   ├── train_robust_vilt.py     # Fine‑tuning script for ViLT on VizWiz
-│   ├── train_multimodal_vqa.py  # Custom training script for multimodel attention on VizWiz
-│   ├── inference_robust_vilt.py # Inference script for the fine‑tuned ViLT model
-│   ├── inference_blip2.py       # Inference script for BLIP2
-│   └── inference_llama32.py     # Inference script for LLaMA 3.2 via Ollama
-├── app.py                       # Interactive Streamlit web app (model selection)
-├── requirements.txt
-└── README.md
+│   ├── robust_vilt.py
+│   ├── florence2.py
+│   └── blip2.py
+├── models
+├── scripts
+├── assets/
+│   └── audio/
+│       └── speech.mp3  ← generated answer audio
+
 ```
 
 
 ## Setup
+---
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/inclusive-vqa-app.git
+cd visionaid-vqa
+```
 
-1. Create a Virtual Environment
+2. Create a Virtual Environment
 Upgrade pip:
 ```bash
 pip install --upgrade pip
@@ -45,49 +63,21 @@ python3 -m venv vqa
 source vqa/bin/activate
 ```
 
-2. Install the dependencies:
+3. Install the dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Fine-Tuning
+## 🧠 Model Weights
 
-Prepare the VizWiz-VQA dataset with an annotation JSON file where each entry has:
-```json
-{
-  "image": "image_filename.jpg",
-  "question": "What is in the picture?",
-  "answer": "expected answer"
-}
-```
-Then run:
+Ensure that the following models are downloaded and placed appropriately:
 
-```bash
-python scripts/train_vilt.py\
-  --train_image_dir /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/train \
-  --val_image_dir /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/val \
-  --train_annotations /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/annotations/train.json \
-  --val_annotations /Users/zagaraa/Documents/GitHub/visionaid-vqa/data/vizwiz/annotations/val.json \
-  --model_name dandelin/vilt-b32-finetuned-vqa \
-  --output_dir models/vilt_finetuned_vizwiz \
-  --num_train_epochs 3 \
-  --per_device_train_batch_size 4 \
-  --learning_rate 5e-5
-```
-
-## Inference
-Test the fine-tuned model:
-```bash
-python scripts/inference_robust_vilt.py --image path/to/test_image.jpg --question "What is in the image?" --model_path ./models/vilt_finetuned_vizwiz
-```
-
-Test the BLIP2 model:
-```bash
-python scripts/inference_blip2.py --image path/to/image.jpg --question "What is in this picture?" --model_path ./models/local_blip2
-```
+`RobustViLT` → `/models/vilt_finetuned_vizwiz_ocr`
+`Florence2Model` → `/models/florence2-finetuned`
+`BLIP2Model` → Uses HuggingFace or local model by default
 
 
-## Interactive Web App
+## To run the Web App
 ```bash
 streamlit run app.py
 ```
