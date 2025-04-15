@@ -14,3 +14,5 @@ scikit-learn==1.6.1
 tensorboard==2.19.0
 gTTS==2.5.4
 streamlit-audiorecorder==0.0.6
+# brew install ffmpeg # for audio processing
+
