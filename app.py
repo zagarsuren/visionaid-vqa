@@ -105,21 +105,21 @@ def main():
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
         
-        # ---------- Text-to-Speech: Save Audio and Autoplay via Custom HTML ----------
+        # ---------- Text-to-Speech: Clean Answer and Convert to Audio, Save it, and Autoplay ----------
         try:
-            # Ensure the assets/audio directory exists
+            # If the answer contains the task prompt, remove it.
+            prompt_to_remove = task_prompt
+            if prompt_to_remove in answer:
+                answer = answer.replace(prompt_to_remove, "").strip()
+            
             audio_dir = os.path.join("assets", "audio")
             os.makedirs(audio_dir, exist_ok=True)
-            
-            # Define the file path where the audio will be saved
             audio_file_path = os.path.join(audio_dir, "speech.mp3")
             
-            # Generate audio using gTTS and save it to the file
             tts = gTTS(answer, lang='en')
             tts.save(audio_file_path)
             
             st.success("Audio generated and saved successfully!")
-            # Autoplay the saved audio file using the custom HTML function
             autoplay_audio(audio_file_path)
         except Exception as e:
             st.error(f"Text-to-speech conversion failed: {e}")
