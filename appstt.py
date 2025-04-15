@@ -132,7 +132,7 @@ def main():
         
         try:
             if model_option == "ViLT-finetuned":
-                model = RobustViLT(model_name="/path/to/vilt_finetuned_model")
+                model = RobustViLT(model_name="models/vilt_finetuned_vizwiz_ocr")
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
                 model = Florence2Model(model_path="models/florence2-finetuned")
