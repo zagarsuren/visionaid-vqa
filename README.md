@@ -7,8 +7,8 @@ This Streamlit web application allows users to upload or capture an image, ask a
 ## 🧠 Features
 
 - 🔍 Supports multiple VQA models:
-  - `RobustViLT` (ViLT-finetuned with OCR)
-  - `Florence2-finetuned` (uses a task prompt)
+  - `RobustViLT` (ViLT-finetuned with VizWiz)
+  - `Florence2-finetuned` (Finetuned with VizWiz)
   - `BLIP2` (multi-modal reasoning model)
 - 📷 Accepts image input from upload or camera
 - ❓ Accepts natural language questions 
@@ -29,6 +29,9 @@ project_root/
 │   ├── florence2.py
 │   └── blip2.py
 ├── models
+│   ├── vilt_finetuned_vizwiz_ocr
+│   ├── florence2-finetuned
+│   ├── local_blip2
 ├── scripts
 ├── assets/
 │   └── audio/
@@ -71,12 +74,9 @@ pip install -r requirements.txt
 
 ## 🧠 Model Weights
 
-Ensure that the following models are downloaded and placed appropriately:
-
 - `RobustViLT` → `/models/vilt_finetuned_vizwiz_ocr`
 - `Florence2Model` → `/models/florence2-finetuned`
-- `BLIP2Model` → Uses HuggingFace or local model by default
-
+- `BLIP2Model` → `local_blip2` Uses HuggingFace or local model by default.
 
 ## To run the Web App
 ```bash
