@@ -57,6 +57,20 @@ def main():
     else:
         uploaded_file = st.camera_input("Capture an image")
     
+    # Footer section in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        """
+        <div style="text-align: center;">
+            <small>Developed by:</small><br>
+            <small>Zagarsuren Sukhbaatar</small><br>
+            <small><a href="mailto:zagarsuren.sukhbaatar@student.uts.edu.au">zagarsuren.sukhbaatar<br>@student.uts.edu.au</a></small><br>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
     # Choose question input method.
     st.subheader("How would you like to input your question?")
     input_mode = st.radio("Choose input method:", ["Text", "Voice (Microphone)"])
