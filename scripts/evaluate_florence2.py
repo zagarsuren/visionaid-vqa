@@ -1,43 +1,48 @@
+#!/usr/bin/env python
 import os
 import json
 import argparse
-from collections import Counter, defaultdict
+from collections import defaultdict, Counter
 from PIL import Image
 import pytesseract
 import torch
-from torch.utils.data import Dataset
 import numpy as np
 import nltk
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.tokenize import word_tokenize
+from transformers import AutoProcessor, AutoModelForCausalLM, AutoConfig
 
-# Disable tokenizer parallelism warning
+# Disable tokenizer parallelism warning.
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-# Set tesseract path as needed (adjust if necessary)
-pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
+pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"  # Adjust path if necessary.
 
-# Download required NLTK resources
+# Download required NLTK data.
 nltk.download('punkt')
 
-from transformers import AutoModelForCausalLM, AutoProcessor, AutoConfig
+def load_model_and_processor(model_path):
+    """
+    Load the Florence2 model and processor using Auto classes with trust_remote_code=True.
+    Also adjust config.vision_config.model_type to 'davit' if needed.
+    """
+    config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+    if getattr(config.vision_config, "model_type", None) != "davit":
+        config.vision_config.model_type = "davit"
+    processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path, config=config, trust_remote_code=True
+    ).to(device)
+    return model, processor
 
-class VizWizDataset(Dataset):
+class VizWizDataset:
     """
-    A dataset class to load VizWiz samples.
-    
-    Each sample includes:
-     - An image loaded and resized to 384x384.
-     - OCR text extracted from the image.
-     - A combined question: original question plus OCR-derived context.
-     - The reference answer computed as the most common answer from multiple annotations;
-       if no answer is available, "unanswerable" is used.
+    Loads VizWiz samples from the JSON file.
+    For each sample, an image is opened, OCR is applied, and a combined prompt (question+OCR context)
+    is formed. The reference answer is chosen as the most common answer (or "unanswerable").
     """
-    def __init__(self, image_dir, annotation_file, processor, max_length=40):
+    def __init__(self, image_dir, annotation_file):
         with open(annotation_file, "r") as f:
             self.samples = json.load(f)
         self.image_dir = image_dir
-        self.processor = processor
-        self.max_length = max_length
 
     def __len__(self):
         return len(self.samples)
@@ -45,26 +50,17 @@ class VizWizDataset(Dataset):
     def __getitem__(self, idx):
         sample = self.samples[idx]
         image_path = os.path.join(self.image_dir, sample["image"])
-        image = Image.open(image_path).convert("RGB").resize((384, 384))
-
-        # Extract OCR text; use a fallback if OCR returns an empty string.
+        try:
+            image = Image.open(image_path).convert("RGB")
+        except Exception as e:
+            raise RuntimeError(f"Error opening image {image_path}: {e}")
+        # Apply OCR to get text context.
         ocr_text = pytesseract.image_to_string(image).strip()
         ocr_text = " ".join(ocr_text.split()) if ocr_text else "no visible text"
-        # Combine the sample question with OCR-derived context.
-        question = f"{sample['question'].strip()} Context: {ocr_text}"
-
-        # Determine the reference answer from sample answers.
+        prompt = f"{sample['question'].strip()} Context: {ocr_text}"
         answers = [a["answer"].strip().lower() for a in sample.get("answers", []) if a["answer"].strip()]
-        reference = Counter(answers).most_common(1)[0][0] if answers else "unanswerable"
-
-        # Process the image and text.
-        inputs = self.processor(text=question, images=image, return_tensors="pt", 
-                                  truncation=True, padding="max_length", max_length=self.max_length)
-        # Remove the extra batch dimension.
-        inputs = {k: v.squeeze(0) for k, v in inputs.items()}
-        inputs["reference"] = reference
-        inputs["image_obj"] = image  # Save the PIL image if needed for further processing.
-        return inputs
+        ref_answer = Counter(answers).most_common(1)[0][0] if answers else "unanswerable"
+        return {"image": image, "prompt": prompt, "label": ref_answer}
 
 def get_answer_type(answer: str):
     if answer == "unanswerable":
@@ -76,45 +72,24 @@ def get_answer_type(answer: str):
     else:
         return "other"
 
+# Choose device: CUDA if available, else CPU.
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--test_image_dir", type=str, required=True, help="Directory containing test images")
-    parser.add_argument("--test_annotations", type=str, required=True, help="Path to the test annotations JSON file")
-    parser.add_argument("--model_path", type=str, required=True, help="Path to the locally fine-tuned Florence2 model")
+    parser = argparse.ArgumentParser(description="Evaluate Florence2 on the VizWiz VQA task")
+    parser.add_argument("--test_image_dir", type=str, required=True, help="Directory containing test images.")
+    parser.add_argument("--test_annotations", type=str, required=True, help="Path to the JSON annotations file.")
+    parser.add_argument("--model_path", type=str, required=True, help="Path or identifier of the Florence2 model.")
+    parser.add_argument("--task_prompt", type=str, default="Describe the scene: ",
+                        help="Task prompt to prepend to the sample prompt.")
     args = parser.parse_args()
 
-    # Set up the device: use MPS (Apple Silicon) if available, then CUDA, else CPU.
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Load model and processor.
+    model, processor = load_model_and_processor(args.model_path)
+    # Load dataset.
+    dataset = VizWizDataset(args.test_image_dir, args.test_annotations)
 
-    # Load the model configuration and override vision_config.model_type if necessary.
-    config = AutoConfig.from_pretrained(
-        args.model_path,
-        trust_remote_code=True,
-        local_files_only=True,
-        repo_type="model"
-    )
-    if getattr(config.vision_config, "model_type", None) != "davit":
-        print(f"Warning: Overriding vision_config.model_type from {config.vision_config.model_type} to 'davit'")
-        config.vision_config.model_type = "davit"
-
-    # Load Florence2 model and processor from the local folder.
-    processor = AutoProcessor.from_pretrained(
-        args.model_path,
-        trust_remote_code=True,
-        local_files_only=True
-    )
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
-        config=config,
-        trust_remote_code=True,
-        local_files_only=True
-    ).to(device)
-
-    # Build the dataset.
-    dataset = VizWizDataset(args.test_image_dir, args.test_annotations, processor)
-
-    # Evaluation metrics containers.
-    model.eval()
+    # For evaluation metrics.
     predictions = []
     references = []
     bleu_scores = []
@@ -122,49 +97,90 @@ def main():
     answer_type_labels = defaultdict(list)
     smoothing_fn = SmoothingFunction().method1
 
-    with torch.no_grad():
-        for sample in dataset:
-            # Prepare input batch: add a batch dimension and move tensors to device.
-            inputs = {k: sample[k].unsqueeze(0).to(device) for k in ["input_ids", "pixel_values"]}
-            # Use Florence2 to generate an answer.
-            generated_ids = model.generate(
-                input_ids=inputs["input_ids"],
-                pixel_values=inputs["pixel_values"],
-                max_new_tokens=50,
-                num_beams=3
-            )
-            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-            reference = sample["reference"]
+    print("\nEvaluating the Florence2 model on the test set...\n")
+    
+    # Determine allowed total token length for this model.
+    config_max = getattr(model.config, "max_position_embeddings", 512)
+    # Try to get the positional offset (if available) from the language model embed_positions.
+    try:
+        offset = int(model.language_model.embed_positions.offset)
+    except Exception:
+        offset = 0
+    allowed_length = config_max - offset
 
-            predictions.append(generated_text.lower())
-            references.append(reference.lower())
-            
-            answer_type = get_answer_type(reference)
-            answer_type_preds[answer_type].append(generated_text.lower())
-            answer_type_labels[answer_type].append(reference.lower())
+    # Define a small generation budget for VQA answers.
+    generation_budget = 20
+    # Calculate maximum allowed input tokens.
+    max_input_tokens = allowed_length - generation_budget
 
-            # Compute BLEU-1 score.
-            reference_tokens = [word_tokenize(reference)]
-            prediction_tokens = word_tokenize(generated_text)
-            bleu = sentence_bleu(reference_tokens, prediction_tokens, weights=(1, 0, 0, 0), smoothing_function=smoothing_fn)
-            bleu_scores.append(bleu)
+    for idx in range(len(dataset)):
+        sample = dataset[idx]
+        # Prepend the task prompt.
+        # Pre-tokenize and truncate text prompt if needed
+        combined_prompt = args.task_prompt + sample["prompt"]
+        text_inputs = processor.tokenizer(combined_prompt, return_tensors="pt")
+        input_ids = text_inputs["input_ids"][0]
 
-    # Calculate overall accuracy (exact string match).
-    overall_acc = np.mean([p == r for p, r in zip(predictions, references)])
+        if input_ids.shape[0] > max_input_tokens:
+            input_ids = input_ids[:max_input_tokens]
+            combined_prompt = processor.tokenizer.decode(input_ids, skip_special_tokens=True)
+
+        # Tokenize again with image using truncated prompt
+        inputs = processor(text=combined_prompt, images=sample["image"], return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+
+        
+        # Truncate the input tokens if necessary.
+        input_length = inputs["input_ids"].shape[1]
+        if input_length > max_input_tokens:
+            inputs["input_ids"] = inputs["input_ids"][:, :max_input_tokens]
+            if "attention_mask" in inputs:
+                inputs["attention_mask"] = inputs["attention_mask"][:, :max_input_tokens]
+            input_length = max_input_tokens
+        
+        remaining_tokens = allowed_length - input_length
+        current_gen_budget = min(generation_budget, remaining_tokens)
+        # Do not pass any max_length parameter; use only max_new_tokens.
+        generated_ids = model.generate(
+            input_ids=inputs["input_ids"],
+            pixel_values=inputs["pixel_values"],
+            max_new_tokens=current_gen_budget,
+            num_beams=3
+        )
+        generated_text = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
+        pred_str = processor.post_process_generation(
+            generated_text,
+            task=args.task_prompt,
+            image_size=(sample["image"].width, sample["image"].height)
+        )
+        if not isinstance(pred_str, str):
+            pred_str = str(pred_str)
+        ref_str = sample["label"]
+
+        predictions.append(pred_str)
+        references.append(ref_str)
+        a_type = get_answer_type(ref_str)
+        answer_type_preds[a_type].append(pred_str)
+        answer_type_labels[a_type].append(ref_str)
+
+        # Compute BLEU-1 score.
+        reference_tokens = [word_tokenize(ref_str)]
+        prediction_tokens = word_tokenize(pred_str)
+        bleu = sentence_bleu(reference_tokens, prediction_tokens, weights=(1, 0, 0, 0),
+                             smoothing_function=smoothing_fn)
+        bleu_scores.append(bleu)
+
+    overall_acc = np.mean([p.strip().lower() == r.strip().lower() for p, r in zip(predictions, references)])
     print(f"\n✅ Overall Test Accuracy: {overall_acc:.4f}")
-
-    # Accuracy broken down by answer type.
     print("\n🔍 Accuracy by Answer Type:")
     for a_type in ["yes/no", "number", "other", "unanswerable"]:
         preds = answer_type_preds[a_type]
         labels = answer_type_labels[a_type]
         if preds:
-            acc = np.mean([p == l for p, l in zip(preds, labels)])
+            acc = np.mean([p.strip().lower() == r.strip().lower() for p, r in zip(preds, labels)])
             print(f"  {a_type:>13}: {acc:.4f} ({len(labels)} samples)")
         else:
             print(f"  {a_type:>13}: No samples")
-
-    # Print average BLEU-1 score.
     mean_bleu = np.mean(bleu_scores) if bleu_scores else 0.0
     print(f"\n🧠 Average BLEU-1 Score: {mean_bleu:.4f}")
 
