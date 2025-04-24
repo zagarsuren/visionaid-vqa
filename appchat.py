@@ -94,6 +94,21 @@ if st.session_state.messages:
     html_lines.append("</body></html>")
     st.sidebar.download_button("🌐 Download Chat as HTML", "\n".join(html_lines), f"chat_{timestamp}.html", "text/html")
 
+
+# ─── FOOTER IN SIDEBAR ───────────────────────────────────────────────────────────── 
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        """
+        <div style="text-align: center;">
+            <small>Developed by:</small><br>
+            <small>Zagarsuren Sukhbaatar</small><br>
+            <small><a href="mailto:zagarsuren.sukhbaatar@student.uts.edu.au">zagarsuren.sukhbaatar<br>@student.uts.edu.au</a></small><br>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
 # ─── CHAT UI ───────────────────────────────────────────────────────────
 st.title("🧑‍💻 Inclusive VQA Chat")
 for msg in st.session_state.messages:
