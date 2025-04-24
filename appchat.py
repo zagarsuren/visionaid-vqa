@@ -114,7 +114,8 @@ st.title("🧑‍💻 Inclusive VQA Chat")
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         if msg.get("image") and os.path.exists(msg["image"]):
-            st.image(msg["image"], use_container_width=True)
+            img = Image.open(msg["image"]).resize((400, 400))
+            st.image(img)
         if msg["content"]:
             st.write(msg["content"])
 
