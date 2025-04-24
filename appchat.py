@@ -36,7 +36,7 @@ def save_session():
 
 # ─── SIDEBAR ───────────────────────────────────────────────────────────
 st.sidebar.title("Settings")
-model_option = st.sidebar.selectbox("Model", ["Florence2-finetuned", "ViLT-finetuned"])
+model_option = st.sidebar.selectbox("Model", ["Florence2", "ViLT"])
 image_source = st.sidebar.radio("Image Source", ["Upload", "Camera"])
 upload_key = f"img_uploader_{st.session_state.upload_count}"
 
