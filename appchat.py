@@ -148,10 +148,10 @@ if st.session_state.pending_question:
     pil_img = Image.open(img_path).convert("RGB").resize((384, 384))
 
     try:
-        if model_option == "ViLT-finetuned":
+        if model_option == "ViLT":
             model = RobustViLT("models/vilt_finetuned_vizwiz")
             answer = model.generate_answer(pil_img, q)
-        elif model_option == "Florence2-finetuned":
+        elif model_option == "Florence2":
             model = Florence2Model("models/florence2-finetuned")
             answer = model.generate_answer(pil_img, "Describe in detail.", q)
     except Exception as e:
