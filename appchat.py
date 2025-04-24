@@ -1,6 +1,7 @@
 import os
 import time
 import base64
+import json
 import streamlit as st
 from datetime import datetime
 from PIL import Image
@@ -10,7 +11,9 @@ from modules.florence2 import Florence2Model
 
 # ─── CONFIG ─────────────────────────────────────────────────────────────
 IMG_DIR = "images"
+SESSION_DIR = "chat_sessions"
 os.makedirs(IMG_DIR, exist_ok=True)
+os.makedirs(SESSION_DIR, exist_ok=True)
 
 # ─── SESSION STATE INIT ─────────────────────────────────────────────────
 for k, v in {
@@ -20,13 +23,19 @@ for k, v in {
     "last_uploaded_image": None,
     "upload_count": 0,
     "uploaded_file_id": None,
+    "current_session_filename": None,
 }.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# ─── AUTO-SAVE FUNCTION ─────────────────────────────────────────────────
+def save_session():
+    if st.session_state.messages and st.session_state.current_session_filename:
+        with open(os.path.join(SESSION_DIR, st.session_state.current_session_filename), "w") as f:
+            json.dump(st.session_state.messages, f, indent=2)
+
 # ─── SIDEBAR ───────────────────────────────────────────────────────────
 st.sidebar.title("Settings")
-
 model_option = st.sidebar.selectbox("Model", ["Florence2-finetuned", "ViLT-finetuned"])
 image_source = st.sidebar.radio("Image Source", ["Upload", "Camera"])
 upload_key = f"img_uploader_{st.session_state.upload_count}"
@@ -37,14 +46,29 @@ else:
     uploaded_file = st.sidebar.camera_input("Take a picture")
 
 if st.sidebar.button("🗑️ Clear Chat"):
-    for key in ["messages", "pending_image", "pending_question", "uploaded_file_id", "last_uploaded_image"]:
+    for key in ["messages", "pending_image", "pending_question", "uploaded_file_id", "last_uploaded_image", "current_session_filename"]:
         st.session_state[key] = None if key != "messages" else []
     st.rerun()
 
-# ─── Download Chat History ─────────────────────────────────────────────
+# ─── SESSION HISTORY: LOAD OLD CHAT ─────────────────────────────────────
+st.sidebar.markdown("### 🗂️ Chat Sessions")
+session_files = sorted(os.listdir(SESSION_DIR), reverse=True)
+selected_session = st.sidebar.selectbox("Load previous session", ["-- Select --"] + session_files)
+
+if selected_session and selected_session != "-- Select --":
+    if selected_session != st.session_state.get("current_session_filename"):
+        with open(os.path.join(SESSION_DIR, selected_session), "r") as f:
+            st.session_state.messages = json.load(f)
+        st.session_state.current_session_filename = selected_session
+        st.session_state.pending_image = None
+        st.session_state.pending_question = None
+        st.session_state.uploaded_file_id = None
+        st.session_state.last_uploaded_image = None
+        st.rerun()
+
+# ─── DOWNLOAD CHAT HISTORY ──────────────────────────────────────────────
 st.sidebar.markdown("---")
 if st.session_state.messages:
-    # Markdown download
     markdown_lines = ["# 🧑‍💻 Inclusive VQA Chat History\n"]
     for i, msg in enumerate(st.session_state.messages, start=1):
         role = msg["role"].capitalize()
@@ -54,31 +78,21 @@ if st.session_state.messages:
         markdown_lines.append(f"### {i}. {role}\n{image_md}\n\n{content}\n")
     md_text = "\n".join(markdown_lines)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M")
-    md_filename = f"chat_history_{timestamp}.md"
-    st.sidebar.download_button("📥 Download Chat as Markdown", md_text, md_filename, "text/markdown")
+    st.sidebar.download_button("📥 Download Chat as Markdown", md_text, f"chat_{timestamp}.md", "text/markdown")
 
-    # HTML download
-    html_lines = [
-        "<!DOCTYPE html>",
-        "<html><head><meta charset='UTF-8'><title>Inclusive VQA Chat</title></head><body>",
-        "<h1>🧑‍💻 Inclusive VQA Chat History</h1>"
-    ]
+    html_lines = ["<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Chat</title></head><body><h1>Chat History</h1>"]
     for i, msg in enumerate(st.session_state.messages, start=1):
         role = msg["role"].capitalize()
         content = msg.get("content", "").replace("\n", "<br>")
         image_path = msg.get("image")
-        image_tag = ""
+        img_tag = ""
         if image_path and os.path.exists(image_path):
             with open(image_path, "rb") as img_file:
-                img_bytes = img_file.read()
-                img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-                mime_type = "image/png"
-                image_tag = f"<img src='data:{mime_type};base64,{img_base64}' width='300'>"
-        html_lines.append(f"<h3>{i}. {role}</h3>{image_tag}<p>{content}</p><hr>")
+                b64_img = base64.b64encode(img_file.read()).decode("utf-8")
+                img_tag = f"<img src='data:image/png;base64,{b64_img}' width='300'>"
+        html_lines.append(f"<h3>{i}. {role}</h3>{img_tag}<p>{content}</p><hr>")
     html_lines.append("</body></html>")
-    html_text = "\n".join(html_lines)
-    html_filename = f"chat_history_{timestamp}.html"
-    st.sidebar.download_button("🌐 Download Chat as HTML", html_text, html_filename, "text/html")
+    st.sidebar.download_button("🌐 Download Chat as HTML", "\n".join(html_lines), f"chat_{timestamp}.html", "text/html")
 
 # ─── CHAT UI ───────────────────────────────────────────────────────────
 st.title("🧑‍💻 Inclusive VQA Chat")
@@ -89,13 +103,11 @@ for msg in st.session_state.messages:
         if msg["content"]:
             st.write(msg["content"])
 
-# 🟡 Show "Agent is working..." temporarily during inference
 if st.session_state.pending_question and st.session_state.pending_image:
     with st.chat_message("assistant"):
         st.write("Agent is working...")
 
-
-# ─── Image Upload Handling ─────────────────────────────────────────────
+# ─── IMAGE HANDLING ────────────────────────────────────────────────────
 if uploaded_file:
     file_id = f"{uploaded_file.name}-{uploaded_file.size}" if hasattr(uploaded_file, "name") else str(time.time())
     if file_id != st.session_state.uploaded_file_id:
@@ -103,17 +115,18 @@ if uploaded_file:
         image_path = os.path.join(IMG_DIR, f"{ts}.png")
         Image.open(uploaded_file).convert("RGB").save(image_path)
 
-        st.session_state.messages.append({
-            "role": "user",
-            "content": "",
-            "image": image_path
-        })
+        if st.session_state.current_session_filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            st.session_state.current_session_filename = f"session_{timestamp}.json"
+
+        st.session_state.messages.append({"role": "user", "content": "", "image": image_path})
         st.session_state.pending_image = image_path
         st.session_state.last_uploaded_image = image_path
         st.session_state.uploaded_file_id = file_id
+        save_session()
         st.rerun()
 
-# ─── Inference ─────────────────────────────────────────────────────────
+# ─── INFERENCE ─────────────────────────────────────────────────────────
 if st.session_state.pending_question:
     q = st.session_state.pending_question
     img_path = st.session_state.pending_image
@@ -132,28 +145,27 @@ if st.session_state.pending_question:
     if isinstance(answer, dict):
         answer = next(iter(answer.values()), str(answer))
 
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": answer,
-        "image": None
-    })
-
+    st.session_state.messages.append({"role": "assistant", "content": answer, "image": None})
     st.session_state.last_uploaded_image = st.session_state.pending_image
     st.session_state.pending_question = None
     st.session_state.pending_image = None
     st.session_state.upload_count += 1
+    save_session()
     st.rerun()
 
-# ─── User Text Input ───────────────────────────────────────────────────
+# ─── CHAT INPUT ────────────────────────────────────────────────────────
 question = st.chat_input("Ask a question about the image…")
-
 if question:
     image_to_use = st.session_state.pending_image or st.session_state.last_uploaded_image
     if image_to_use is None:
         st.error("❗ Please upload an image before asking a question.")
     else:
+        if st.session_state.current_session_filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            st.session_state.current_session_filename = f"session_{timestamp}.json"
+
         st.session_state.pending_image = image_to_use
         st.session_state.messages.append({"role": "user", "content": question, "image": None})
-        # st.session_state.messages.append({"role": "assistant", "content": "Agent is working...", "image": None})
         st.session_state.pending_question = question
+        save_session()
         st.rerun()

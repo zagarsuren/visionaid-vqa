@@ -32,6 +32,7 @@ logs/
 *.log
 *.out
 *.tmp
+chat_sessions/
 
 # Ignore datasets 
 data/
@@ -45,6 +46,8 @@ data/
 *.zip
 *.tar
 *.tar.gz
+*.json
+
 
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/
