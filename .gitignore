@@ -32,11 +32,15 @@ logs/
 *.log
 *.out
 *.tmp
+
+# Ignore chat sessions
 chat_sessions/
+images/
 
 # Ignore datasets 
 data/
 *.jpg
+*.jpeg
 *.png
 *.csv
 *.json
