@@ -1,6 +1,6 @@
 accelerate>=0.26.0
 numpy==1.24.3
-streamlit==1.21.0
+streamlit>=1.44.0
 SpeechRecognition==3.8.1
 torch==2.0.0
 torchvision==0.15.1
@@ -14,6 +14,4 @@ scikit-learn==1.6.1
 tensorboard==2.19.0
 gTTS==2.5.4
 streamlit-audiorecorder==0.0.6
-gradio==4.44.1
-# brew install ffmpeg # for audio processing
 
