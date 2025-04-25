@@ -83,5 +83,9 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+```
+tensorboard --logdir=runs
+```
+
 ## License
 This project is licensed under the MIT License.
