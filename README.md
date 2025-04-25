@@ -6,15 +6,14 @@ This Streamlit web application allows users to upload or capture an image, ask a
 
 ## 🧠 Features
 
-- 🔍 Supports multiple VQA models:
-  - `RobustViLT` (ViLT-finetuned with VizWiz)
-  - `Florence2-finetuned` (Finetuned with VizWiz)
-  - `BLIP2` (multi-modal reasoning model)
+- 🔍 Supports VQA models:
+  - `vilt_finetuned_vizwiz` (Vision Language Transformer model finetuned with VizWiz)
+  - `florence2-finetuned` (Multimodal reasoning model finetuned with VizWiz)
 - 📷 Accepts image input from upload or camera
 - ❓ Accepts natural language questions 
-- 🔊 Accepts audio input and converts audio to text
-- 🔊 Converts answers to speech using `gTTS`
-- 🎧 Auto-plays audio response in the app
+- 🔊 Accepts audio input and converts audio to text (appstt.py)
+- 🔊 Converts answers to speech using `gTTS` (appstt.py)
+- 🎧 Auto-plays audio response in the app (appstt.py)
 
 ---
 
@@ -23,20 +22,15 @@ This Streamlit web application allows users to upload or capture an image, ask a
 ```graphql
 project_root/
 ├── data  
-├── app.py  
 ├── modules/
 │   ├── robust_vilt.py
 │   ├── florence2.py
-│   └── blip2.py
 ├── models
 │   ├── vilt_finetuned_vizwiz
 │   ├── florence2-finetuned
-│   ├── local_blip2
 ├── scripts
-├── assets/
-│   └── audio/
-│       └── recording.mp3  ← recorded question audio
-│       └── speech.mp3  ← generated answer audio
+├── appchat.py # App with chat like UI
+├── appstt.py # App with speech recognition and TTS module
 
 ```
 
@@ -76,13 +70,13 @@ pip install -r requirements.txt
 
 - `RobustViLT` → `/models/vilt_finetuned_vizwiz`
 - `Florence2Model` → `/models/florence2-finetuned`
-- `BLIP2Model` → `local_blip2` Uses HuggingFace or local model by default.
 
 ## To run the Web App
 ```bash
 streamlit run app.py
 ```
 
+## To see the log
 ```
 tensorboard --logdir=runs
 ```
