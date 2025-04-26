@@ -21,7 +21,6 @@ if "voice_question" not in st.session_state:
     st.session_state.voice_question = ""
 
 # ─── AUDIO PLAY ─────────────────────────────────────────────────────────
-
 def autoplay_audio(file_path: str):
     """
     Reads the audio file from file_path, encodes it as base64, and injects HTML
@@ -32,14 +31,16 @@ def autoplay_audio(file_path: str):
             data = f.read()
         b64 = base64.b64encode(data).decode()
         html_audio = f"""
-            <audio controls autoplay=\"true\">\n                <source src=\"data:audio/mp3;base64,{b64}\" type=\"audio/mp3\">\n                Your browser does not support the audio element.\n            </audio>
+            <audio controls autoplay="true">
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                Your browser does not support the audio element.
+            </audio>
         """
         st.markdown(html_audio, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Could not load the audio: {e}")
 
 # ─── MAIN ─────────────────────────────────────────────────────────
-
 def main():
     st.title("Inclusive VQA System for Visually Impaired Users")
     st.write("Choose a model and ask a question about an image.")
