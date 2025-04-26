@@ -7,7 +7,7 @@ This Streamlit web application allows users to upload or capture an image, ask a
 ## 🧠 Features
 
 - 🔍 Supports VQA models:
-  - `vilt_finetuned_vizwiz` (Vision Language Transformer model finetuned with VizWiz)
+  - `vilt_finetuned_vizwiz` (Vision-and-Language Transformer model finetuned with VizWiz)
   - `florence2-finetuned` (Multimodal reasoning model finetuned with VizWiz)
 - 📷 Accepts image input from upload or camera
 - ❓ Accepts natural language questions 
@@ -68,17 +68,12 @@ pip install -r requirements.txt
 
 ## 🧠 Model Weights
 
-- `RobustViLT` → `/models/vilt_finetuned_vizwiz`
+- `ViLT` → `/models/vilt_finetuned_vizwiz`
 - `Florence2Model` → `/models/florence2-finetuned`
 
 ## To run the Web App
 ```bash
 streamlit run app.py
-```
-
-## To see the log
-```
-tensorboard --logdir=runs
 ```
 
 ## License
