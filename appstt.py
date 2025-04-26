@@ -20,6 +20,8 @@ from pydub import AudioSegment
 if "voice_question" not in st.session_state:
     st.session_state.voice_question = ""
 
+# ─── AUDIO PLAY ─────────────────────────────────────────────────────────
+
 def autoplay_audio(file_path: str):
     """
     Reads the audio file from file_path, encodes it as base64, and injects HTML
@@ -35,6 +37,8 @@ def autoplay_audio(file_path: str):
         st.markdown(html_audio, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Could not load the audio: {e}")
+
+# ─── MAIN ─────────────────────────────────────────────────────────
 
 def main():
     st.title("Inclusive VQA System for Visually Impaired Users")
