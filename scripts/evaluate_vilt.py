@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 import os
 import json
 import argparse
 from collections import Counter, defaultdict
+
 from PIL import Image
-import pytesseract
 import torch
 from torch.utils.data import Dataset
 from transformers import ViltProcessor, ViltForQuestionAnswering
@@ -12,13 +13,10 @@ import nltk
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.tokenize import word_tokenize
 
-# Disable tokenizer parallelism warning
+# ─── SETUP ──────────────────────────────────────────────────────────────
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"  # Adjust path if needed
+nltk.download("punkt", quiet=True)
 
-# Download required NLTK resources if not already available
-nltk.download('punkt')
-nltk.download('punkt_tab')
 
 class VizWizDataset(Dataset):
     def __init__(self, image_dir, annotation_file, processor, answer2id, max_length=40):
@@ -28,124 +26,168 @@ class VizWizDataset(Dataset):
         self.processor = processor
         self.answer2id = answer2id
         self.max_length = max_length
-        self.num_labels = len(answer2id)
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
-        image_path = os.path.join(self.image_dir, sample["image"])
-        image = Image.open(image_path).convert("RGB").resize((384, 384))
+        img_path = os.path.join(self.image_dir, sample["image"])
+        try:
+            image = Image.open(img_path).convert("RGB").resize((384, 384))
+        except Exception as e:
+            raise RuntimeError(f"Error opening {img_path}: {e}")
 
-        # OCR context: get text from image; use a fallback if empty
-        ocr_text = pytesseract.image_to_string(image).strip()
-        ocr_text = " ".join(ocr_text.split()) if ocr_text else "no visible text"
-        question = f"{sample['question'].strip()} Context: {ocr_text}"
+        # raw reference answer (majority vote; or 'unanswerable')
+        answers = [
+            a["answer"].strip().lower()
+            for a in sample.get("answers", [])
+            if a.get("answer", "").strip()
+        ]
+        ref_answer = Counter(answers).most_common(1)[0][0] if answers else "unanswerable"
 
-        # Get the most common answer, or default to "unanswerable"
-        answers = [a["answer"].strip().lower() for a in sample.get("answers", []) if a["answer"].strip()]
-        answer = Counter(answers).most_common(1)[0][0] if answers else "unanswerable"
-        label = self.answer2id.get(answer, -100)
+        # map to label id (fall back to 'unanswerable')
+        label = self.answer2id.get(ref_answer, self.answer2id["unanswerable"])
 
-        inputs = self.processor(image, question, return_tensors="pt", truncation=True,
-                                  padding="max_length", max_length=self.max_length)
-        inputs = {k: v.squeeze(0) for k, v in inputs.items()}
+        # prepare model inputs (only question text)
+        question = sample["question"].strip()
+        inputs = self.processor(
+            image,
+            question,
+            return_tensors="pt",
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+        )
+        # squeeze out batch dim
+        for k in ["input_ids", "attention_mask", "pixel_values"]:
+            inputs[k] = inputs[k].squeeze(0)
+
+        # attach ground-truth info for evaluation
         inputs["label"] = label
+        inputs["ref_answer"] = ref_answer
         return inputs
+
 
 def get_answer_type(answer: str):
     if answer == "unanswerable":
         return "unanswerable"
-    elif answer in ["yes", "no"]:
+    if answer in ("yes", "no"):
         return "yes/no"
-    elif answer.replace('.', '', 1).isdigit():
+    if answer.replace(".", "", 1).isdigit():
         return "number"
-    else:
-        return "other"
+    return "other"
+
+
+def evaluate(model, processor, dataset, id2answer):
+    smoothing_fn = SmoothingFunction().method1
+    N = len(dataset)
+
+    bleu_scores = []
+    total_correct = 0
+    type_counts = defaultdict(int)
+    type_correct = defaultdict(int)
+
+    print("\n🧠 Evaluating ViLT on VizWiz...\n")
+
+    model.eval()
+    with torch.no_grad():
+        for idx in range(N):
+            sample = dataset[idx]
+
+            # send inputs to device
+            inputs = {
+                k: sample[k].unsqueeze(0).to(model.device)
+                for k in ("input_ids", "attention_mask", "pixel_values")
+            }
+
+            # model forward
+            logits = model(**inputs).logits
+            pred_idx = int(logits.argmax(dim=-1).item())
+
+            # decode strings
+            pred_str = id2answer.get(pred_idx, "unanswerable")
+            ref_str = sample["ref_answer"]
+
+            # BLEU-1
+            bleu = sentence_bleu(
+                [word_tokenize(ref_str)],
+                word_tokenize(pred_str),
+                weights=(1, 0, 0, 0),
+                smoothing_function=smoothing_fn
+            )
+            bleu_scores.append(bleu)
+
+            # accuracy
+            correct = (pred_str.strip().lower() == ref_str.strip().lower())
+            if correct:
+                total_correct += 1
+
+            # per-type tallies based on raw JSON
+            t = get_answer_type(ref_str)
+            type_counts[t] += 1
+            if correct:
+                type_correct[t] += 1
+
+    overall_acc = total_correct / N if N > 0 else 0.0
+    avg_bleu = float(np.mean(bleu_scores)) if bleu_scores else 0.0
+
+    # print results
+    print(f"\n✅ Overall Accuracy: {overall_acc:.4f} ({total_correct}/{N})")
+    print(f"📝 Average BLEU-1 Score: {avg_bleu:.4f}\n")
+    print("🎯 Accuracy by Answer Type:")
+    for t in ("unanswerable", "yes/no", "number", "other"):
+        cnt = type_counts[t]
+        corr = type_correct[t]
+        acc = corr / cnt if cnt > 0 else 0.0
+        print(f" - {t:12s}: {corr}/{cnt} = {acc:.4f}")
+    print()
+
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--test_image_dir", type=str, required=True)
-    parser.add_argument("--test_annotations", type=str, required=True)
-    parser.add_argument("--model_path", type=str, required=True)
+    parser = argparse.ArgumentParser(description="Evaluate ViLT VQA on VizWiz.")
+    parser.add_argument("--test_image_dir", type=str, required=True,
+                        help="Directory of test images.")
+    parser.add_argument("--test_annotations", type=str, required=True,
+                        help="JSON file with test annotations.")
+    parser.add_argument("--model_path", type=str, required=True,
+                        help="Path to the fine-tuned ViLT model.")
     args = parser.parse_args()
 
-    # Device setup
-    device = torch.device("mps" if torch.backends.mps.is_available()
-                          else "cuda" if torch.cuda.is_available() else "cpu")
+    # device setup
+    device = (
+        torch.device("mps")
+        if torch.backends.mps.is_available()
+        else torch.device("cuda")
+        if torch.cuda.is_available()
+        else torch.device("cpu")
+    )
 
-    # Load model and processor
+    # load model & processor
     model = ViltForQuestionAnswering.from_pretrained(args.model_path).to(device)
     processor = ViltProcessor.from_pretrained(args.model_path)
 
-    # Build answer2id and id2answer mappings from the model config
+    # build model label mappings (for decoding predictions)
     answer2id = {v.lower(): int(k) for k, v in model.config.id2label.items()}
     id2answer = {int(k): v.lower() for k, v in model.config.id2label.items()}
 
-    # Ensure "unanswerable" exists in the label mapping
+    # ensure 'unanswerable' exists
     if "unanswerable" not in answer2id:
         next_id = max(answer2id.values()) + 1
         answer2id["unanswerable"] = next_id
         id2answer[next_id] = "unanswerable"
 
-    # Load dataset
-    dataset = VizWizDataset(args.test_image_dir, args.test_annotations, processor, answer2id)
+    # prepare dataset (uses raw JSON for type counts)
+    dataset = VizWizDataset(
+        args.test_image_dir,
+        args.test_annotations,
+        processor,
+        answer2id,
+    )
 
-    # Evaluation
-    model.eval()
-    predictions = []
-    references = []
-    bleu_scores = []
-    answer_type_preds = defaultdict(list)
-    answer_type_labels = defaultdict(list)
-    smoothing_fn = SmoothingFunction().method1
+    # run eval
+    evaluate(model, processor, dataset, id2answer)
 
-    with torch.no_grad():
-        for sample in dataset:
-            inputs = {k: sample[k].unsqueeze(0).to(device) for k in ["input_ids", "attention_mask", "pixel_values"]}
-            logits = model(**inputs).logits
-            pred = torch.argmax(logits, dim=-1).item()
-            label = sample["label"]
-
-            if label in id2answer:
-                pred_str = id2answer[pred]
-                label_str = id2answer[label]
-                answer_type = get_answer_type(label_str)
-
-                predictions.append(pred_str)
-                references.append(label_str)
-                answer_type_preds[answer_type].append(pred_str)
-                answer_type_labels[answer_type].append(label_str)
-
-                # Compute BLEU-1 score
-                reference_tokens = [word_tokenize(label_str)]
-                prediction_tokens = word_tokenize(pred_str)
-                bleu = sentence_bleu(reference_tokens, prediction_tokens, weights=(1, 0, 0, 0), smoothing_function=smoothing_fn)
-                bleu_scores.append(bleu)
-
-                # Optional: Debug unanswerable cases
-                # if label_str == "unanswerable":
-                #    print(f"✅ Unanswerable example: pred={pred_str}, label={label_str}")
-
-    # Overall accuracy
-    overall_acc = np.mean([p == l for p, l in zip(predictions, references)])
-    print(f"\n✅ Overall Test Accuracy: {overall_acc:.4f}")
-
-    # Accuracy by answer type
-    print("\n🔍 Accuracy by Answer Type:")
-    for a_type in ["yes/no", "number", "other", "unanswerable"]:
-        preds = answer_type_preds[a_type]
-        labels = answer_type_labels[a_type]
-        if preds:
-            acc = np.mean([p == l for p, l in zip(preds, labels)])
-            print(f"  {a_type:>13}: {acc:.4f} ({len(labels)} samples)")
-        else:
-            print(f"  {a_type:>13}: No samples")
-
-    # BLEU score
-    mean_bleu = np.mean(bleu_scores) if bleu_scores else 0.0
-    print(f"\n🧠 Average BLEU-1 Score: {mean_bleu:.4f}")
 
 if __name__ == "__main__":
     main()
