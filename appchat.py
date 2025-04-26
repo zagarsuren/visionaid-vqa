@@ -154,7 +154,7 @@ if st.session_state.pending_question:
             answer = model.generate_answer(pil_img, q)
         elif model_option == "Florence2":
             model = Florence2Model("models/florence2-finetuned")
-            answer = model.generate_answer(pil_img, "Focus on question and describe in detail.", q)
+            answer = model.generate_answer(pil_img, "Describe the answer in detail.", q)
     except Exception as e:
         answer = f"❗ Error: {e}"
 
