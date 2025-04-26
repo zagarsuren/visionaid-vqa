@@ -5,8 +5,7 @@ import streamlit as st
 from PIL import Image
 import torch
 from modules.robust_vilt import RobustViLT
-from modules.blip2 import BLIP2Model
-from modules.florence2 import Florence2Model  # Florence2Model with three-argument generate_answer
+from modules.florence2 import Florence2Model
 
 from gtts import gTTS
 import base64
@@ -31,10 +30,7 @@ def autoplay_audio(file_path: str):
             data = f.read()
         b64 = base64.b64encode(data).decode()
         html_audio = f"""
-            <audio controls autoplay="true">
-                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                Your browser does not support the audio element.
-            </audio>
+            <audio controls autoplay=\"true\">\n                <source src=\"data:audio/mp3;base64,{b64}\" type=\"audio/mp3\">\n                Your browser does not support the audio element.\n            </audio>
         """
         st.markdown(html_audio, unsafe_allow_html=True)
     except Exception as e:
@@ -47,7 +43,7 @@ def main():
     # Model selection via sidebar.
     model_option = st.sidebar.selectbox(
         "Select Model",
-        ("Florence2-finetuned", "ViLT-finetuned", "BLIP2")
+        ("Florence2-finetuned", "ViLT-finetuned")
     )
     
     # Image source selection: Upload or Camera Capture.
@@ -64,12 +60,11 @@ def main():
         <div style="text-align: center;">
             <small>Developed by:</small><br>
             <small>Zagarsuren Sukhbaatar</small><br>
-            <small><a href="mailto:zagarsuren.sukhbaatar@student.uts.edu.au">zagarsuren.sukhbaatar<br>@student.uts.edu.au</a></small><br>
+            <small><a href=\"mailto:zagarsuren.sukhbaatar@student.uts.edu.au\">zagarsuren.sukhbaatar@student.uts.edu.au</a></small><br>
         </div>
         """,
         unsafe_allow_html=True
     )
-
 
     # Choose question input method.
     st.subheader("How would you like to input your question?")
@@ -118,7 +113,7 @@ def main():
     if uploaded_file is not None:
         try:
             image = Image.open(uploaded_file).convert("RGB")
-            st.image(image, caption="Uploaded/Captured Image", use_column_width=True)
+            st.image(image, caption="Uploaded/Captured Image", use_container_width=True)
         except Exception as e:
             st.error(f"Error displaying the image: {e}")
             return
@@ -140,7 +135,7 @@ def main():
             st.error(f"Error processing the image: {e}")
             return
         
-        # Resize the image if necessary.
+        # Resize the image
         if image.size != (384, 384):
             image = image.resize((384, 384))
         
@@ -149,13 +144,8 @@ def main():
                 model = RobustViLT(model_name="models/vilt_finetuned_vizwiz")
                 answer = model.generate_answer(image, question)
             elif model_option == "Florence2-finetuned":
-                # Note: The task_prompt is provided to the model during generation,
-                # but we don't want it to be read in the Text-to-Speech output.
                 task_prompt = "Describe the answer in detail."
                 answer = Florence2Model(model_path="models/florence2-finetuned").generate_answer(image, task_prompt, question)
-            elif model_option == "BLIP2":
-                model = BLIP2Model()
-                answer = model.generate_answer(image, question)
         except Exception as e:
             st.error(f"An error occurred during prediction: {e}")
             answer = "Unknown"
@@ -164,18 +154,16 @@ def main():
         if not isinstance(answer, str):
             answer = str(answer)
 
-        # If the answer is a dict, extract the value to remove any dictionary formatting (i.e. remove "{'" characters).
+        # If the answer is a dict, extract the value to remove any dictionary formatting.
         if isinstance(answer, dict):
-            answer = answer.get("", "")
+            answer = list(answer.values())[0] if answer else ""
         
-        
-        st.image(image, caption="Captured/Uploaded Image", use_column_width=True)
+        st.image(image, caption="Captured/Uploaded Image", use_container_width=True)
         st.write(f"**Question:** {question}")
         st.write(f"**Answer ({model_option}):** {answer}")
         
         # ---------- Text-to-Speech: Clean Answer and Convert to Audio, Save it, and Autoplay ----------
         try:
-            # If the answer contains the task prompt, remove it.
             prompt_to_remove = "{'Describe the answer in detail.'"
             if prompt_to_remove in answer:
                 answer = answer.replace(prompt_to_remove, "").strip()
