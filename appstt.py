@@ -48,7 +48,7 @@ def main():
     # Model selection via sidebar.
     model_option = st.sidebar.selectbox(
         "Select Model",
-        ("Florence2-finetuned", "ViLT-finetuned")
+        ("Florence2", "ViLT")
     )
     
     # Image source selection: Upload or Camera Capture.
@@ -145,10 +145,10 @@ def main():
             image = image.resize((384, 384))
         
         try:
-            if model_option == "ViLT-finetuned":
+            if model_option == "ViLT":
                 model = RobustViLT(model_name="models/vilt_finetuned_vizwiz")
                 answer = model.generate_answer(image, question)
-            elif model_option == "Florence2-finetuned":
+            elif model_option == "Florence2":
                 task_prompt = "Describe the answer in detail."
                 answer = Florence2Model(model_path="models/florence2-finetuned").generate_answer(image, task_prompt, question)
         except Exception as e:
@@ -156,12 +156,15 @@ def main():
             answer = "Unknown"
         
         # Ensure the answer is a string.
-        if not isinstance(answer, str):
-            answer = str(answer)
+        # if not isinstance(answer, str):
+        #     answer = str(answer)
+
+        if isinstance(answer, dict):
+            answer = next(iter(answer.values()), str(answer))
 
         # If the answer is a dict, extract the value to remove any dictionary formatting.
-        if isinstance(answer, dict):
-            answer = list(answer.values())[0] if answer else ""
+        # if isinstance(answer, dict):
+        #    answer = list(answer.values())[0] if answer else ""
         
         st.image(image, caption="Captured/Uploaded Image", use_container_width=True)
         st.write(f"**Question:** {question}")
