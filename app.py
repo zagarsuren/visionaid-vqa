@@ -88,20 +88,29 @@ def demo_page():
             st.session_state[key] = None if key != "messages" else []
         st.rerun()
 
+    # Display Chat Sessions
     st.sidebar.markdown("### 🗂️ Chat Sessions")
-    session_files = sorted(os.listdir(SESSION_DIR), reverse=True)
-    selected_session = st.sidebar.selectbox("Load previous session", ["-- Select --"] + session_files)
 
-    if selected_session and selected_session != "-- Select --":
-        if selected_session != st.session_state.get("current_session_filename"):
-            with open(os.path.join(SESSION_DIR, selected_session), "r") as f:
+    # Get session filenames and remove .json for display
+    session_files = sorted(os.listdir(SESSION_DIR), reverse=True)
+    session_display_names = [f.replace(".json", "") for f in session_files]
+
+    # Add "-- Select --" option at the beginning
+    selected_display_name = st.sidebar.selectbox("Load previous session", ["-- Select --"] + session_display_names)
+
+    # Match display name back to real filename
+    if selected_display_name and selected_display_name != "-- Select --":
+        real_filename = selected_display_name + ".json"
+        if real_filename != st.session_state.get("current_session_filename"):
+            with open(os.path.join(SESSION_DIR, real_filename), "r") as f:
                 st.session_state.messages = json.load(f)
-            st.session_state.current_session_filename = selected_session
+            st.session_state.current_session_filename = real_filename
             st.session_state.pending_image = None
             st.session_state.pending_question = None
             st.session_state.uploaded_file_id = None
             st.session_state.last_uploaded_image = None
             st.rerun()
+
 
     st.sidebar.markdown("---")
     if st.session_state.messages:
