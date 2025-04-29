@@ -51,6 +51,7 @@ data/
 *.tar
 *.tar.gz
 *.json
+*.db
 
 
 # Ignore Jupyter Notebook checkpoints
