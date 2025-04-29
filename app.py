@@ -65,6 +65,14 @@ def verify_user(conn, email, password):
         return True
     return False
 
+# ─── EMAIL VALIDATION ──────────────────────────────────────────────────────
+import re
+
+def is_valid_email(email):
+    # Simple regex for standard email format
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w{2,}$"
+    return re.match(pattern, email) is not None
+
 
 # ─── DEMO PAGE ──────────────────────────────────────────────────────────
 def demo_page():
@@ -239,8 +247,8 @@ def about_page():
     Developed by: Zagarsuren Sukhbaatar  
     Research focus: Assistive AI, Computer Vision, Responsible Technology
     """)
-    # Sidebar Logo
-    st.image("/Users/zagaraa/Documents/GitHub/visionaid-vqa/assets/logo/vqa-logo.png", use_container_width=False, width=300)
+    # Profile Image
+    st.image("/Users/zagaraa/Documents/GitHub/visionaid-vqa/assets/profile/Photo-grey.png", use_container_width=False, width=300)
 
 # ─── MAIN FUNCTION ───────────────────────────────────────────────────────
 def main():
@@ -315,11 +323,17 @@ def main():
         new_password = st.sidebar.text_input("New Password", type="password", key="new_password")
 
         if st.sidebar.button("Create Account"):
-            try:
-                insert_user(conn, new_email, new_password)
-                st.sidebar.success("Account created successfully! You can now log in.")
-            except sqlite3.IntegrityError:
-                st.sidebar.error("Account with this email already exists.")
+            if not is_valid_email(new_email):
+                st.sidebar.error("❌ Please enter a valid email address.")
+            elif len(new_password) < 6:
+                st.sidebar.error("❌ Password must be at least 6 characters long.")
+            else:
+                try:
+                    insert_user(conn, new_email, new_password)
+                    st.sidebar.success("✅ Account created successfully! You can now log in.")
+                except sqlite3.IntegrityError:
+                    st.sidebar.error("❌ Account with this email already exists.")
+
 
     # ─── PAGE RENDERING ─────────────────────────────────────────────────────
     if st.session_state.page == "Home":
