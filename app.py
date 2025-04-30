@@ -196,7 +196,7 @@ def demo_page():
 
     if st.session_state.pending_question and st.session_state.pending_image:
         with st.chat_message("assistant"):
-            st.write("VQA assistant is working...")
+            st.write("Seeing the world ...")
 
     if uploaded_file:
         file_id = f"{uploaded_file.name}-{uploaded_file.size}" if hasattr(uploaded_file,"name") else str(time.time())
@@ -269,25 +269,21 @@ def demo_page():
 # ─── HOME PAGE ───────────────────────────────────────────────────────────
 def home_page():
     st.title("Welcome to the Inclusive VQA Assistant")
-    st.subheader("From pixels to answers—let your images speak!")  # H3 under the main title
-
-    # Display the selected image
-    st.image("assets/demo/app.jpeg", use_container_width=True)
-
-    st.write("""
-    This is your gateway to accessible AI-powered image understanding.
-    """)
+    st.subheader("Let’s see the world together! - AI assistant for visually impaired people")  # H3 under the main title
 
     st.markdown("**What You Can Do Here:**")
     st.markdown("""
     - **Upload or Snap a Photo**: Provide an image via uploader or camera.  
-    - **Ask Natural-Language Questions**: Anything from “What objects do you see?” to “Describe the scene in detail.”  
+    - **Ask Natural-Language Questions**: Anything from “What objects do you see?”, “Describe the scene in detail.”, "Read the text in the image." to "What is the color of the car?"  
     - **Get Instant, Contextual Answers**: Powered by ViLT & Florence2 models.  
     """)
 
     st.markdown("**Key Features:**")
     st.markdown("""
-    - Model choice: switch between ViLT and Florence2  
+    - Multimodal understanding: text+image context for better answers
+    - Optical character recognition: read text in images
+    - Image captioning: get a detailed description of the image
+    - Text-to-speech: listen to answers for a more accessible experience      
     - Session management: save, revisit, and export your Q&A history  
     - Exportable chats: download as Markdown or HTML  
     """)
@@ -298,6 +294,11 @@ def home_page():
     2. Log in and click **Demo**  
     3. Upload an image → Ask a question → Get answer about the image  
     """)
+
+    st.markdown("---")
+    # Display the selected image
+    st.image("assets/demo/home.jpg", use_container_width=True)
+    st.markdown("---")
 
 # ─── ABOUT PAGE ──────────────────────────────────────────────────────────
 def about_page():
@@ -312,8 +313,8 @@ def about_page():
     st.write("""
     1. **Preprocessing:** images are resized & normalized.  
     2. **Model Inference:**  
-       - **ViLT:** transformer-based vision+language encoder  
-       - **Florence2:** multimodal fusion for richer context  
+       - **ViLT:** Transformer-based vision+language model  
+       - **Florence2:** Unified vision foundation model for image understanding  
     3. **Answer Generation:** a language head streams back contextual answers.
     """)
 
