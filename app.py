@@ -297,6 +297,7 @@ def home_page():
 
     st.markdown("---")
     # Display the selected image
+    st.markdown("**Example:**")
     st.image("assets/demo/home.jpg", use_container_width=True)
     st.markdown("---")
 
@@ -336,7 +337,7 @@ def about_page():
     with col2:
         st.markdown("<h3 style='color:steelblue;'>Supervisor</h3>", unsafe_allow_html=True)
         # st.image("assets/profile/Photo-grey.png", width=200)
-        st.markdown("<strong>Nabin Sharma</strong>", unsafe_allow_html=True)
+        st.markdown("<strong>Dr. Nabin Sharma</strong>", unsafe_allow_html=True)
         st.write("""
         Associate Professor, University of Technology Sydney (UTS).
         """ )
