@@ -26,7 +26,7 @@ This script defines:
 - main(): argument parsing, dataset and model setup, and training loop.
 
 Usage:
-    python vilt_vqa_finetune.py \
+    python train_vilt.py \
         --train_image_dir PATH_TO_TRAIN_IMAGES \
         --val_image_dir PATH_TO_VAL_IMAGES \
         --train_annotations PATH_TO_TRAIN_JSON \
