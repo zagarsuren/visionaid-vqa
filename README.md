@@ -1,8 +1,8 @@
 # VisionAid-VQA: Inclusive Visual Question Answering Using Deep Learning and Multimodal Attention Mechanisms
 
-This Streamlit web application allows users to upload or capture an image, ask a question about it, and receive an **audio response** using advanced **Visual Question Answering (VQA)** models. The system is designed for accessibility, especially supporting visually impaired users.
+This Streamlit web application allows users to upload or capture an image, ask a question about it, and receive a **text and audio response** using advanced **Visual Question Answering (VQA)** models. The system is designed for accessibility, especially supporting visually impaired users.
 
-![img](assets/demo/app.jpeg)
+![img](assets/demo/home.jpeg)
 
 ---
 
@@ -13,9 +13,8 @@ This Streamlit web application allows users to upload or capture an image, ask a
   - `florence2-finetuned` (Multimodal reasoning model finetuned with VizWiz)
 - 📷 Accepts image input from upload or camera
 - ❓ Accepts natural language questions 
-- 🔊 Accepts audio input and converts audio to text (appstt.py)
-- 🔊 Converts answers to speech using `gTTS` (appstt.py)
-- 🎧 Auto-plays audio response in the app (appstt.py)
+- 🔊 Converts answers to speech using `gTTS`
+- 🎧 Auto-plays audio response in the app
 
 ---
 
@@ -31,11 +30,8 @@ project_root/
 │   ├── vilt_finetuned_vizwiz
 │   ├── florence2-finetuned
 ├── scripts
-├── appchat.py # App with chat like UI
-├── appstt.py # App with speech recognition and TTS module
-
+├── app.py
 ```
-
 
 ## Setup
 ---
