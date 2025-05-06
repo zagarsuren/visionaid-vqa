@@ -2,7 +2,7 @@
 
 This Streamlit web application allows users to upload or capture an image, ask a question about it, and receive **text and audio responses** using advanced **Visual Question Answering (VQA)** models. The system is designed for accessibility, especially supporting visually impaired users.
 
-![img](assets/demo/home.jpeg)
+![img](assets/demo/app-2.jpeg)
 
 ---
 
