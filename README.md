@@ -22,15 +22,15 @@ This Streamlit web application allows users to upload or capture an image, ask a
 
 ```graphql
 project_root/
-├── data  
+├── data # Dataset directory 
 ├── modules/
-│   ├── robust_vilt.py
-│   ├── florence2.py
+│   ├── robust_vilt.py # ViLT inference module
+│   ├── florence2.py # Florence-2 inference module
 ├── models
-│   ├── vilt_finetuned_vizwiz
-│   ├── florence2-finetuned
-├── scripts
-├── app.py
+│   ├── vilt_finetuned_vizwiz # ViLT model weight
+│   ├── florence2-finetuned # Florence-2 model weight
+├── scripts # Fine-tuning and evaluation scripts
+├── app.py # Streamlit app
 ```
 
 ## Setup
