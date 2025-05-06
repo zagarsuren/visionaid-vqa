@@ -9,11 +9,11 @@ This Streamlit web application allows users to upload or capture an image, ask a
 ## 🧠 Features
 
 - 🔍 Supports VQA models:
-  - `vilt_finetuned_vizwiz` (Vision-and-Language Transformer model finetuned with VizWiz)
-  - `florence2-finetuned` (Multimodal reasoning model finetuned with VizWiz)
+  - `vilt_finetuned_vizwiz` (Transformer-based vision language model finetuned with VizWiz)
+  - `florence2-finetuned` (Unified vision language model finetuned with VizWiz)
 - 📷 Accepts image input from upload or camera
 - ❓ Accepts natural language questions 
-- 🔊 Converts answers to speech using `gTTS`
+- 🔊 Converts text answers to speech using `gTTS`
 - 🎧 Auto-plays audio response in the app
 
 ---
@@ -37,7 +37,7 @@ project_root/
 ---
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/inclusive-vqa-app.git
+git clone https://github.com/zagarsuren/visionaid-vqa
 cd visionaid-vqa
 ```
 
