@@ -8,7 +8,6 @@ class Florence2Model:
     using a locally fine-tuned checkpoint.
     
     The model and processor are loaded from a local checkpoint (default: "models/florence2-finetuned").
-    If the configuration's vision_config.model_type is not "davit", it is overridden to bypass the assertion error.
     """
     def __init__(self, model_path="/Users/zagaraa/Documents/GitHub/visionaid-vqa/models/florence2-finetuned"):
         # Load the configuration.
@@ -37,7 +36,7 @@ class Florence2Model:
           - It concatenates the task prompt and the additional text input to form the full prompt.
           - It processes the input image and prompt.
           - It generates a prediction using beam search.
-          - It decodes and post-processes the output, using the task_prompt (not the full prompt) to guide post-processing.
+          - It decodes and post-processes the output, using the task_prompt or full prompt to guide post-processing.
         
         Parameters:
             image (PIL.Image): The input image.
@@ -75,7 +74,7 @@ class Florence2Model:
         # Post-process the output.
         answer = self.processor.post_process_generation(
             generated_text,
-            task=task_prompt,  # Only the task prompt is passed here, as in the command-line script.
+            task=prompt,  # The task prompt is used for post-processing.
             image_size=(image.width, image.height)
         )
         return answer
