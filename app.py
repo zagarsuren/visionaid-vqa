@@ -196,7 +196,7 @@ def demo_page():
 
     if st.session_state.pending_question and st.session_state.pending_image:
         with st.chat_message("assistant"):
-            st.write("Seeing the world ...")
+            st.write("VQA is working ...")
 
     if uploaded_file:
         file_id = f"{uploaded_file.name}-{uploaded_file.size}" if hasattr(uploaded_file,"name") else str(time.time())
