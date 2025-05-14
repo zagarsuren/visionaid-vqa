@@ -66,8 +66,8 @@ pip install -r requirements.txt
 
 ## 🧠 Model Weights
 
-- `ViLT` → `/models/vilt_finetuned_vizwiz`
-- `Florence2Model` → `/models/florence2-finetuned`
+- `ViLT` → `/models/vilt_finetuned_vizwiz`. ViLT model weight can be found at: [https://huggingface.co/Zagarsuren/vilt-finetuned-vizwiz](https://huggingface.co/Zagarsuren/vilt-finetuned-vizwiz)
+- `Florence2Model` → `/models/florence2-finetuned` Florence-2 model weight can be found at: [https://huggingface.co/Zagarsuren/florence2-finetuned-vizwiz](https://huggingface.co/Zagarsuren/florence2-finetuned-vizwiz)
 
 ## To run the Web App
 ```bash
